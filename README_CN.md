@@ -1079,7 +1079,7 @@ ThreadSP ThreadedClient::subscribe(string host, int port, MessageHandler handler
 
 * port是发布端节点的端口号。
 
-* handler是用户自定义的回调函数，用于处理每次流入的消息。函数的参数是流入的消息，每条消息就是六数据表的一行。函数的结果必须是void。
+* handler是用户自定义的回调函数，用于处理每次流入的消息。函数的参数是流入的消息，每条消息就是流数据表的一行。函数的结果必须是void。
 
 * tableName是字符串，表示发布端上共享流数据表的名称。
 
