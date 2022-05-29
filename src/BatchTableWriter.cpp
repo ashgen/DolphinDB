@@ -159,7 +159,6 @@ bool BatchTableWriter::writeTableAllData(SmartPointer<DestTable> destTable,bool 
 
     bool writedataok = true;
     {
-        RECORDTIME("BTW::createTable");
         destTableRawPtr->writeTable = Util::createTable(destTableRawPtr->colNames, destTableRawPtr->colTypes, 0, size);
         INDEX insertedRows;
         std::string errMsg;
@@ -178,7 +177,6 @@ bool BatchTableWriter::writeTableAllData(SmartPointer<DestTable> destTable,bool 
     {
         try
         {
-            RECORDTIME("BTW::saveTable");
             std::vector<ConstantSP> args;
             args.reserve(1);
             if (destTableRawPtr->createTmpSharedTable.empty() == false)

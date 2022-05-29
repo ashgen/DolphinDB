@@ -858,14 +858,29 @@ public:
 		EC_Server=5,
 		EC_UserBreak=6,
 		EC_DestroyedObject=7,
-		EC_Exception=8,
+		EC_Other=8,
 	};
 	ErrorCodeInfo() {
-		errorCode = 0;
 	}
-	void set(int code, const string &info);
+	void clearError(){
+		errorCode.clear();
+	}
+	bool hasError(){
+		return errorCode.empty() == false;
+	}
+	bool succeed() {
+		return errorCode.empty();
+	}
+	static string formatApiCode(int code){
+		if(code != EC_None)
+			return "A" + std::to_string(code);
+		else
+			return "";
+	}
+	void set(int apiCode, const string &info);
+	void set(const string &code, const string &info);
 	void set(const ErrorCodeInfo &src);
-	int errorCode;
+	string errorCode;
 	string errorInfo;
 };
 
@@ -882,11 +897,11 @@ private:
 	struct Node {
 		string name;
 		long minOrder;
-		std::vector<float> costTime;//ms
+		std::vector<long long> costTime;//ns
 	};
 	static long lastRecordOrder_;
 	static Mutex mapMutex_;
-	static std::unordered_map<std::string, SmartPointer<RecordTime::Node>> codeMap_;
+	static std::unordered_map<std::string, RecordTime::Node*> codeMap_;
 };
 
 class EXPORT_DECL DLogger {
@@ -937,6 +952,10 @@ private:
 	}
 	template<typename TA>
 	static void Write(std::string &text, Level level, int deepth, TA first) {
+		if (deepth == 0) {
+			if (FormatFirst(text, level) == false)
+				return;
+		}
 		text += " " + Create(first);
 		WriteLog(text);
 	}

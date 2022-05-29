@@ -20,7 +20,11 @@
 #include <chrono>
 
 #ifdef _MSC_VER
-	#define EXPORT_DECL _declspec(dllexport)
+	#ifdef _USRDLL	
+		#define EXPORT_DECL _declspec(dllexport)
+	#else
+		#define EXPORT_DECL __declspec(dllimport)
+	#endif
 #else
 	#define EXPORT_DECL 
 #endif
@@ -90,12 +94,12 @@ public:
 	static Constant* createNanoTimestamp(int year, int month, int day, int hour, int minute, int second, int nanosecond);
 	static Constant* createNanoTimestamp(long long nanoseconds);
 	static Constant* createTimestamp(int year, int month, int day, int hour, int minute, int second, int millisecond);
-	static Constant* createTimestamp(long long nanoseconds);
+	static Constant* createTimestamp(long long milliseconds);
 	static Constant* createDateTime(int year, int month, int day, int hour, int minute, int second);
 	static Constant* createDateTime(int seconds);
 	static Constant* createDateHour(int hours);
 	static Constant* createDateHour(int year, int month, int day, int hour);
-	
+
 	static bool isFlatDictionary(Dictionary* dict);
 	static Table* createTable(Dictionary* dict, int size);
 	static Table* createTable(const vector<string>& colNames, const vector<DATA_TYPE>& colTypes, INDEX size, INDEX capacity);
@@ -212,43 +216,45 @@ public:
 	static Vector* createSymbolVector(const SymbolBaseSP& symbolBase, INDEX size, INDEX capacity=0, bool fast=true,
 		void* data=0, void** dataSegment=0, int segmentSizeInBit=0, bool containNull=false);
 
+	static void SetOrThrowErrorInfo(ErrorCodeInfo *errorCodeInfo, int errorCode, const string &errorInfo);
 	template<typename T>
-	static ConstantSP createObject(DATA_TYPE dataType, T val) {
-		throw RuntimeException("Failed to insert data, unsupported data for column type " + getDataTypeString(dataType));
+	static ConstantSP createObject(DATA_TYPE dataType, T val, ErrorCodeInfo *errorCodeInfo = NULL) {
+		SetOrThrowErrorInfo(errorCodeInfo,ErrorCodeInfo::EC_InvalidObject, "It cannot be converted to " + getDataTypeString(dataType));
+		return NULL;
 	}
-	static ConstantSP createObject(DATA_TYPE dataType, std::nullptr_t val);
-	static ConstantSP createObject(DATA_TYPE dataType, Constant* val);
-	static ConstantSP createObject(DATA_TYPE dataType, ConstantSP val);
-	static ConstantSP createObject(DATA_TYPE dataType, bool val);
-	static ConstantSP createObject(DATA_TYPE dataType, char val);
-	static ConstantSP createObject(DATA_TYPE dataType, short val);
-	static ConstantSP createObject(DATA_TYPE dataType, const char* val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::string val);
-	static ConstantSP createObject(DATA_TYPE dataType, const unsigned char* val);
-	static ConstantSP createObject(DATA_TYPE dataType, unsigned char val[]);
-	static ConstantSP createObject(DATA_TYPE dataType, long long val);
-	static ConstantSP createObject(DATA_TYPE dataType, long int val);
-	static ConstantSP createObject(DATA_TYPE dataType, int val);
-	static ConstantSP createObject(DATA_TYPE dataType, float val);
-	static ConstantSP createObject(DATA_TYPE dataType, double val);
-	static ConstantSP createObject(DATA_TYPE dataType, const void* val);
+	static ConstantSP createObject(DATA_TYPE dataType, std::nullptr_t val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, Constant* val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, ConstantSP val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, bool val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, char val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, short val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, const char* val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::string val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, const unsigned char* val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, unsigned char val[], ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, long long val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, long int val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, int val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, float val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, double val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, const void* val, ErrorCodeInfo *errorCodeInfo = NULL);
 
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<std::nullptr_t> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<Constant*> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<ConstantSP> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<bool> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<char> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<short> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const char*> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<std::string> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const unsigned char*> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<long long> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<long int> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<int> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<float> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<double> val);
-	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const void*> val);
-	static ConstantSP createValue(DATA_TYPE dataType, long long val, const char *pTypeName);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<std::nullptr_t> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<Constant*> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<ConstantSP> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<bool> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<char> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<short> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const char*> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<std::string> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const unsigned char*> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<long long> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<long int> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<int> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<float> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<double> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static ConstantSP createObject(DATA_TYPE dataType, std::vector<const void*> val, ErrorCodeInfo *errorCodeInfo = NULL);
+	static inline ConstantSP createValue(DATA_TYPE dataType, long long val, const char *pTypeName, ErrorCodeInfo *errorCodeInfo = NULL);
 	static bool checkColDataType(DATA_TYPE colDataType, bool isColTemporal, ConstantSP &constsp);
 	static unsigned long getCurThreadId();
 	static void writeFile(const char *pfilepath, const void *pbytes, int bytelen);

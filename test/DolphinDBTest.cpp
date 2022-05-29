@@ -3201,9 +3201,10 @@ void test_batchTableWriter_insert() {
 
 	for (int j = 0;j < 20;j++) {
 		TableSP result = btw.getAllStatus();
-		if (result->getColumn(3)->getString(0).c_str() == to_string(3003000)) { 
-			break; 
-		} else {
+		if (result->getColumn(3)->getString(0).c_str() == to_string(3003000)) {
+			break;
+		}
+		else {
 			this_thread::sleep_for(chrono::seconds(1));
 		}
 	}
@@ -3213,6 +3214,142 @@ void test_batchTableWriter_insert() {
 	result3 = conn.run(script)->getInt();
 	ASSERTION("test_batchTableWriter_insert11", result3, 1);
 	btw.removeTable("dfs://test_batchTableWriter", "ptable");
+}
+
+void test_batchTableWriter_insert_symbol_in_memory() {
+	string script;
+	script += "try{undef(`st, SHARED)}catch(ex){}; share table(3000000:0, `c1`c2`c3, [SYMBOL, SYMBOL, SYMBOL]) as st;";
+	conn.run(script);
+	BatchTableWriter btw(hostName, port, "admin", "123456", true);
+	btw.addTable("st");
+	for (int i = 0; i < 3000000; i++) {
+		btw.insert("st", "", "A" + std::to_string(i%10), "B" + std::to_string(i%10), "C" + std::to_string(i%10));
+	}
+	for (int j = 0;j < 20;j++) {
+		TableSP result = btw.getAllStatus();
+		if (result->getColumn(3)->getString(0).c_str() == to_string(3000000)) break;
+		else {
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+	}
+	string script2;
+	script2 += "c1v=`A + string(0..9);";
+	script2 += "c2v=`B + string(0..9);";
+	script2 += "c3v=`C + string(0..9);";
+	script2 += "expected=table(symbol(loop(take{, 300000}, c1v).flatten()) as c1, symbol(loop(take{, 300000}, c2v).flatten()) as c2, symbol(loop(take{, 300000}, c3v).flatten()) as c3);";
+	script2 += "each(eqObj, (select * from expected order by c1, c2, c3).values(), (select * from st order by c1, c2, c3).values()).all()";
+	int result1;
+	result1 = conn.run(script2)->getInt();
+	ASSERTION("test_batchTableWriter_insert_symbol_in_memory", result1, 1);
+	btw.removeTable("st");
+}
+
+void test_batchTableWriter_insert_symbol_dfs() {
+	string script;
+	script += "dbName='dfs://test_batchTableWriter_symbol';";
+	script += "if(existsDatabase(dbName)){dropDatabase(dbName)};";
+	script += "db=database(dbName, HASH, [SYMBOL, 10]);";
+	script += "t = table(1:0, `c1`c2`c3, [SYMBOL, SYMBOL, SYMBOL]);";
+	script += "pt=db.createPartitionedTable(t, `pt, `c1);";
+	conn.run(script);
+	BatchTableWriter btw(hostName, port, "admin", "123456", true);
+	btw.addTable("dfs://test_batchTableWriter_symbol", "pt");
+	for (int i = 0; i < 3000000; i++) {
+		btw.insert("dfs://test_batchTableWriter_symbol", "pt", "A" + std::to_string(i % 10), "B" + std::to_string(i % 10), "C" + std::to_string(i % 10));
+	}
+	for (int j = 0;j < 20;j++) {
+		TableSP result = btw.getAllStatus();
+		if (result->getColumn(3)->getString(0).c_str() == to_string(3000000)) break;
+		else {
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+	}
+	string script2;
+	script2 += "c1v=`A + string(0..9);";
+	script2 += "c2v=`B + string(0..9);";
+	script2 += "c3v=`C + string(0..9);";
+	script2 += "expected=table(symbol(loop(take{, 300000}, c1v).flatten()) as c1, symbol(loop(take{, 300000}, c2v).flatten()) as c2, symbol(loop(take{, 300000}, c3v).flatten()) as c3);";
+	script2 += "each(eqObj, (select * from expected order by c1, c2, c3).values(), (select * from pt order by c1, c2, c3).values()).all()";
+	int result1;
+	result1 = conn.run(script2)->getInt();
+	ASSERTION("test_batchTableWriter_insert_symbol_dfs", result1, 1);
+	btw.removeTable("dfs://test_batchTableWriter_symbol", "pt");
+}
+
+void test_batchTableWriter_insert_16_bytes() {
+	string script;
+	script += "try{undef(`st, SHARED)}catch(ex){}; share table(3000000:0, `c1`c2`c3, [UUID, INT128, IPADDR]) as st;";
+	conn.run(script);
+	BatchTableWriter btw(hostName, port, "admin", "123456", true);
+	btw.addTable("st");
+	unsigned char data[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+	for (int i = 0; i < 10; i++) {
+		btw.insert("st", "", data, data, data);
+	}
+	for (int j = 0;j < 20;j++) {
+		TableSP result = btw.getAllStatus();
+		if (result->getColumn(3)->getString(0).c_str() == to_string(10)) break;
+		else {
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+	}
+	btw.removeTable("st");
+	ASSERTION("test_batchTableWriter_insert_16_bytes", 1, 1);
+}
+
+void test_batchTableWriter_insert_char_len_not_16() {
+	string script;
+	script += "try{undef(`st, SHARED)}catch(ex){}; share table(3000000:0, `c1`c2`c3, [UUID, INT128, IPADDR]) as st;";
+	conn.run(script);
+	BatchTableWriter btw(hostName, port, "admin", "123456", true);
+	btw.addTable("st");
+	unsigned char data[15] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
+	for (int i = 0; i < 10; i++) {
+		btw.insert("st", "", data, data, data);
+	}
+	for (int j = 0;j < 20;j++) {
+		TableSP result = btw.getAllStatus();
+		if (result->getColumn(3)->getString(0).c_str() == to_string(10)) break;
+		else {
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+	}
+	TableSP result;
+	result = conn.run("select * from st");
+	cout << result->getString() << endl;
+	ASSERTION("test_batchTableWriter_insert_char_len_not_16", 1, 1);
+}
+
+void test_batchTableWriter_getUnwrittenData() {
+	string script;
+	script += "try{undef(`st, SHARED)}catch(ex){}; share table(3000000:0, `c1`c2`c3, [SYMBOL, SYMBOL, SYMBOL]) as st;";
+	conn.run(script);
+	BatchTableWriter btw(hostName, port, "admin", "123456", true);
+	btw.addTable("st");
+	for (int i = 0; i < 3000000; i++) {
+		btw.insert("st", "", "A" + std::to_string(i % 10), "B" + std::to_string(i % 10), "C" + std::to_string(i % 10));
+	}
+	TableSP tableUnwritten1;
+	tableUnwritten1 = btw.getUnwrittenData("st");
+	int rowNum1;
+	rowNum1 = tableUnwritten1->getColumn(0)->size();
+	cout << rowNum1 << endl;
+
+	for (int j = 0;j < 20;j++) {
+		TableSP result = btw.getAllStatus();
+		if (result->getColumn(3)->getString(0).c_str() == to_string(3000000)) break;
+		else {
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+	}
+
+	TableSP tableUnwritten2;
+	tableUnwritten2 = btw.getUnwrittenData("st");
+	int rowNum2;
+	rowNum2 = tableUnwritten2->getColumn(0)->size();
+	ASSERTION("test_batchTableWriter_getUnwrittenData", rowNum2, 0);
+	cout << rowNum2 << endl;
+	btw.removeTable("st");
 }
 
 void test_batchTableWriter_addTable() {
@@ -3526,7 +3663,7 @@ test_batchTableWriter_insert_unMultithread(BatchTableWriter &btw, string dbName,
 	for (int i = 0; i < testNum; ++i) {
 		test_batchTableWriter_insert_thread_fuction(i, ref(btw), dbName, tableName, data);
 	}
-	for(int j = 0; j < 200; ++j) {
+	for (int j = 0; j < 200; ++j) {
 		TableSP t = btw.getAllStatus();
 		VectorSP sendedRows = t->getColumn(3);
 		int size = sendedRows->size();
@@ -3610,7 +3747,7 @@ test_batchTableWriter_insert_multithread_using_CPP_type(BatchTableWriter &btw, s
 	for (int i = 0; i < threadNum; ++i) {
 		threadVec[i] = thread(test_batchTableWriter_insert_thread_fuction_using_cpp_type, i, ref(btw), dbName, tableName, data);
 	}
-	for(int j = 0; j < 200; ++j) {
+	for (int j = 0; j < 200; ++j) {
 		TableSP t = btw.getAllStatus();
 		VectorSP sendedRows = t->getColumn(3);
 		int size = sendedRows->size();
@@ -3714,7 +3851,7 @@ test_batchTableWriter_insert_multithread(BatchTableWriter &btw, string dbName, s
 	for (int i = 0; i < threadNum; ++i) {
 		threadVec[i] = thread(test_batchTableWriter_insert_thread_fuction, i, ref(btw), dbName, tableName, data);
 	}
-	for(int j = 0; j < 200; ++j) {
+	for (int j = 0; j < 200; ++j) {
 		TableSP t = btw.getAllStatus();
 		VectorSP sendedRows = t->getColumn(3);
 		int size = sendedRows->size();
@@ -4439,6 +4576,28 @@ void test_BatchTableWriter_insert_error_type() {
 	conn.run(script);
 }
 
+void test_symbol_base_exceed_2097152() {
+	vector < string > colNames = { "name", "id", "str" };
+	vector<DATA_TYPE> colTypes = { DT_SYMBOL, DT_INT, DT_STRING };
+	int colNum = 3, rowNum = 30000000;
+	ConstantSP table = Util::createTable(colNames, colTypes, rowNum, 100);
+	vector<VectorSP> columnVecs;
+	for (int i = 0;i<colNum;i++) {
+		columnVecs.push_back(table->getColumn(i));
+	}
+	try {
+		for (int i = 0;i<rowNum;i++) {
+			columnVecs[0]->set(i, Util::createString("name_" + std::to_string(i)));
+			columnVecs[1]->setInt(i, i);
+			columnVecs[2]->setString(i, std::to_string(i));
+		}
+	}
+	catch (exception e) {
+		cout << e.what() << endl;
+	}
+
+}
+
 int main(int argc, char ** argv) {
 	DBConnection::initialize();
 	bool ret = conn.connect(hostName, port, "admin", "123456");
@@ -4558,6 +4717,12 @@ int main(int argc, char ** argv) {
 	test_multithread();
 	test_BatchTableWriter_insert_error_type();
 	//test_BatchTableWriter_exception();
+	test_batchTableWriter_insert_symbol_in_memory();
+	test_batchTableWriter_insert_symbol_dfs();
+	test_batchTableWriter_insert_16_bytes();
+	test_batchTableWriter_insert_char_len_not_16();
+	test_batchTableWriter_getUnwrittenData();
+	test_symbol_base_exceed_2097152();
 	std::thread t1(test_Block_Table);
 	t1.join();
 	std::thread t2(tets_Block_Reader_DFStable);

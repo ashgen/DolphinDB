@@ -36,11 +36,11 @@ int min(INDEX a, int b) {
 }    // namespace std
 #endif
 
-#define DLOG //DLogger::Info
 //#define APIMinVersionRequirement 100
 #define APIMinVersionRequirement 210
-
 #define SYMBOLBASE_MAX_SIZE 1<<21
+
+#define DLOG //DLogger::Info
 
 static inline uint32_t murmur32_16b (const unsigned char* key){
 	const uint32_t m = 0x5bd1e995;
@@ -977,8 +977,8 @@ ConstantSP DBConnectionImpl::run(const string& script, const string& scriptType,
                 throw IOException("The function argument or uploaded object is not marshallable.");
             }
         }
-        DataOutputStreamSP outStream = new DataOutputStream(conn_);
-        ConstantMarshallFactory marshallFactory(outStream);
+		DataOutputStreamSP outStream = new DataOutputStream(conn_);
+		ConstantMarshallFactory marshallFactory(outStream);
         for (int i = 0; i < argCount; ++i) {
             ConstantMarshall* marshall = marshallFactory.getConstantMarshall(args[i]->getForm());
             if (i == 0)
@@ -1104,6 +1104,7 @@ bool DBConnection::connect(const string& hostName, int port, const string& userI
                            bool ha, const vector<string>& highAvailabilitySites, int keepAliveTime) {
     ha_ = ha;
     initialScript_ = startup;
+	lastNodeIndex_ = 0;
     if (ha_) {
 		while (true) {
 			if (conn_->connect(hostName, port, userId, password, enableSSL_, asynTask_, keepAliveTime, compress_)) {
@@ -1179,7 +1180,19 @@ bool getNewLeader(const string& s, string& host, int& port) {
         port = std::stoi(v[1]);
         return true;
     } else {
-        return false;
+		static string ignoreMsgs[] = {"<ChunkInTransaction>","<ChunkInRecovery>","<DataNodeNotAvail>","<DataNodeNotReady>","DFS is not enabled","DFS_CLIENT is null"};
+		static int ignoreMsgSize = sizeof(ignoreMsgs) / sizeof(string);
+		for (int i = 0; i < ignoreMsgSize; i++) {
+			index = msg.find(ignoreMsgs[i]);
+			if (index != string::npos) {
+				if (i <= 1) {//ChunkInTransaction and ChunkInRecovery should sleep a while before chunk is ready
+					Util::sleep(10000);
+				}
+				host.clear();
+				return true;
+			}
+		}
+		return false;
     }
 }
 
@@ -1190,6 +1203,8 @@ void DBConnection::switchDataNode(const string& err) {
     string host;
     int port;
     if (getNewLeader(err, host, port)) {
+		if (host.empty())
+			goto switchnode;
         int attempt = 0;
         while (true) {
             std::cerr << "Got new leader exception, new leader is " << host << ":" << port << " #attempt=" << attempt++
@@ -1203,22 +1218,25 @@ void DBConnection::switchDataNode(const string& err) {
                     break;
                 }
                 else{
-                    if (attempt >= 10)
-                        throw IOException("Failed to connect to host = " + host + ", port = " + std::to_string(port));
+                    //if (attempt >= 10)
+                    //    throw IOException("Failed to connect to host = " + host + ", port = " + std::to_string(port));
                 }
             } catch (IOException& ex) {
                 std::cerr << "Connect to node " << host << ":" << port << " came across a exception: " << ex.what()
                           << std::endl;
-                if (attempt >= 10)
-                    throw ex;
+                //if (attempt >= 10)
+                //    throw ex;
 
                 getNewLeader(ex.what(), host, port);
+				if(host.empty())
+					goto switchnode;
             }
             Util::sleep(100);
         }
     } else {
-        for (int i = 0;; ++i, i %= nodes_->size()) {
-            string str = nodes_->get(i)->getString();
+switchnode:
+        for (lastNodeIndex_ = (lastNodeIndex_+1)% nodes_->size();; ++lastNodeIndex_, lastNodeIndex_ %= nodes_->size()) {
+            string str = nodes_->get(lastNodeIndex_)->getString();
             vector<string> v = Util::split(str, ':');
             std::cerr << "Trying node: " << str << std::endl;
             try {
@@ -1619,6 +1637,7 @@ void PartitionedTableAppender::init(string dbUrl, string tableName, string parti
             partitionColumnIdx_ = tableInfo_->getMember("partitionColumnIndex")->getInt();
             partitionSchema = tableInfo_->getMember("partitionSchema");
             partitionType =  tableInfo_->getMember("partitionType")->getInt();
+            partitionColType = (DATA_TYPE)tableInfo_->getMember("partitionColumnType")->getInt();
         }
         else{
             int dims = partColNames->size();
@@ -1634,12 +1653,12 @@ void PartitionedTableAppender::init(string dbUrl, string tableName, string parti
             partitionColumnIdx_ = tableInfo_->getMember("partitionColumnIndex")->getInt(index);
             partitionSchema = tableInfo_->getMember("partitionSchema")->get(index);
             partitionType =  tableInfo_->getMember("partitionType")->getInt(index);
+            partitionColType = (DATA_TYPE)tableInfo_->getMember("partitionColumnType")->getInt(index);
         }
 
         colDefs = tableInfo_->getMember("colDefs");
         cols_ = colDefs->rows();
         typeInts = colDefs->getColumn("typeInt");
-        partitionColType = (DATA_TYPE)typeInts->getInt(partitionColumnIdx_);
         columnCategories_.resize(cols_);
         columnTypes_.resize(cols_);
         for (int i = 0; i < cols_; ++i) {
@@ -1674,6 +1693,8 @@ int PartitionedTableAppender::append(TableSP table){
         int key = keys[i];
         if(key >= 0)
             chunkIndices_[key % threadCount_].emplace_back(i);
+        else
+            chunkIndices_[0].emplace_back(i);
     }
     for(int i=0; i<threadCount_; ++i){
         if(chunkIndices_[i].size() == 0)
@@ -1851,8 +1872,9 @@ int SymbolBase::find(const string& symbol){
 }
 
 int SymbolBase::findAndInsert(const string& symbol){
-    if(symbol == "")
-        throw RuntimeException("A symbol base key string can't be null.");
+	//remove following line to support empty symbol
+    //if(symbol == "")
+    //    throw RuntimeException("A symbol base key string can't be null.");
     if(symMap_.empty()){
         if(syms_.size() > 0 && syms_[0] != "")
             throw RuntimeException("A symbol base's first key must be empty string.");
@@ -1908,7 +1930,7 @@ bool DLogger::FormatFirst(std::string &text, Level level) {
 	return true;
 }
 
-std::unordered_map<std::string, SmartPointer<RecordTime::Node>> RecordTime::codeMap_;
+std::unordered_map<std::string, RecordTime::Node*> RecordTime::codeMap_;
 Mutex RecordTime::mapMutex_;
 long RecordTime::lastRecordOrder_ = 0;
 RecordTime::RecordTime(const string &name) :
@@ -1922,8 +1944,8 @@ RecordTime::RecordTime(const string &name) :
 RecordTime::~RecordTime() {
 	long long diff = Util::getNanoEpochTime() - startTime_;
 	LockGuard<Mutex> LockGuard(&mapMutex_);
-	std::unordered_map<std::string, SmartPointer<RecordTime::Node>>::iterator iter = codeMap_.find(name_);
-	SmartPointer<RecordTime::Node> pnode;
+	std::unordered_map<std::string, RecordTime::Node*>::iterator iter = codeMap_.find(name_);
+	RecordTime::Node *pnode;
 	if (iter != codeMap_.end()) {
 		pnode = iter->second;
 	}
@@ -1936,43 +1958,56 @@ RecordTime::~RecordTime() {
 	if (pnode->minOrder > recordOrder_) {
 		pnode->minOrder = recordOrder_;
 	}
-	pnode->costTime.push_back(diff/1000.0f);
+	pnode->costTime.push_back(diff);
+	//pnode->startEndTime.push_back(startTime_);
 	//std::cout<<Util::getEpochTime()<<" "<<name_<<recordOrder_<<" end "<<pnode->costTime.size()<<" times cost "<<diff/1000000.0<<std::endl;
 }
 std::string RecordTime::printAllTime() {
 	std::string output;
 	LockGuard<Mutex> LockGuard(&mapMutex_);
-	std::vector<SmartPointer<RecordTime::Node>> nodes;
+	std::vector<RecordTime::Node*> nodes;
 	nodes.reserve(codeMap_.size());
-	for (std::unordered_map<std::string, SmartPointer<RecordTime::Node>>::iterator iter = codeMap_.begin(); iter != codeMap_.end(); iter++) {
+	for (std::unordered_map<std::string, RecordTime::Node*>::iterator iter = codeMap_.begin(); iter != codeMap_.end(); iter++) {
 		nodes.push_back(iter->second);
 	}
-	std::sort(nodes.begin(), nodes.end(), [](SmartPointer<RecordTime::Node> a, SmartPointer<RecordTime::Node> b) {
+	std::sort(nodes.begin(), nodes.end(), [](RecordTime::Node *a, RecordTime::Node *b) {
 		return a->minOrder < b->minOrder;
 	});
-	for (SmartPointer<RecordTime::Node> node : nodes) {
-		double sum = 0.0;//s
-		double max = 0.0, min = 0.0;
-		double second;
-		for (float one : node->costTime) {
-			second = one / 1000.0;//s
-			sum += second;
-			if (max < second) {
-				max = second;
+	static double ns2s = 1000000.0;
+	for (RecordTime::Node *node : nodes) {
+		long sumNsOverflow = 0;
+		long long sumNs = 0;//ns
+		double maxNs = 0, minNs = 0;
+		for (long long one : node->costTime) {
+			sumNs += one;
+			if (sumNs < 0) {
+				sumNsOverflow++;
+				sumNs = -(sumNs + LLONG_MAX);
 			}
-			if (min == 0 || min > second) {
-				min = second;
+			if (maxNs < one) {
+				maxNs = one;
+			}
+			if (minNs == 0 || minNs > one) {
+				minNs = one;
 			}
 		}
-		output = output + node->name + ": sum=" + std::to_string(sum) + " count=" + std::to_string(node->costTime.size()) +
-			" avg=" + std::to_string(sum / node->costTime.size()) +
-			" min=" + std::to_string(min) + " max=" + std::to_string(max) + "\n";
+		double sum = sumNsOverflow * (LLONG_MAX / ns2s) + sumNs / ns2s;
+		double min = minNs / ns2s;
+		double max = maxNs / ns2s;
+		output = output + node->name + ": sum = " + std::to_string(sum) + " count = " + std::to_string(node->costTime.size()) +
+			" avg = " + std::to_string(sum / node->costTime.size()) +
+			" min = " + std::to_string(min) + " max = " + std::to_string(max) + "\n";
+		delete node;
 	}
 	codeMap_.clear();
 	return output;
 }
 
-void ErrorCodeInfo::set(int code, const string &info) {
+void ErrorCodeInfo::set(int apiCode, const string &info){
+    set(formatApiCode(apiCode), info);
+}
+
+void ErrorCodeInfo::set(const string &code, const string &info) {
 	errorCode = code;
 	errorInfo = info;
 }

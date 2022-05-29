@@ -15,16 +15,14 @@
 #include <cassert>
 
 #ifdef _MSC_VER
-	#define EXPORT_DECL _declspec(dllexport)
+	#ifdef _USRDLL	
+		#define EXPORT_DECL _declspec(dllexport)
+	#else
+		#define EXPORT_DECL __declspec(dllimport)
+	#endif
 #else
 	#define EXPORT_DECL 
 #endif
-
-//#include "MultithreadTableWriter.h"
-#ifndef RECORDTIME
-#undef RECORDTIME
-#endif
-#define RECORDTIME(name) //RecordTime _recordTime(name)
 
 namespace dolphindb{
 
@@ -128,7 +126,7 @@ private:
         bool destroy = false;
         bool finished = false;
     };
-    //写入失败或者没有数据需要写入则退出
+    //write failed or no data
     bool writeTableAllData(SmartPointer<DestTable> destTable,bool partitioned);
     void insertRecursive(std::vector<ConstantSP>* row, DestTable* destTable, int colIndex){
         assert(colIndex == destTable->columnNum);

@@ -1489,6 +1489,8 @@ public:
 	virtual IO_ERR deserialize(DataInputStream* in, INDEX indexStart, INDEX targetNumElement, INDEX& numElement);
 	virtual INDEX rows() const { return index_->rows(); }
 	virtual INDEX columns() const { return value_->rows(); }
+	INDEX		  checkVectorSize();//<0: The vectors in the array vector are of different size. >=0: The vectors are of the same size {x}.
+	VectorSP	  getFlatValueArray(){ return value_; }
 	void reserveValue(INDEX capacity) { value_->reserve(capacity); }
 
 private:
@@ -2548,8 +2550,16 @@ public:
 		return new FastSymbolVector(new SymbolBase(0), size, capacity, data, false);
 
 	}
-	virtual ConstantSP getValue() const{return ConstantSP(new FastSymbolVector(base_, size_, 0, data_, false));}
-	virtual ConstantSP getValue(INDEX capacity) const {return ConstantSP(new FastSymbolVector(base_, size_, capacity, data_, false));}
+	virtual ConstantSP getValue() const{
+		int* buffer = getDataArray(0, size_);
+		return ConstantSP(new FastSymbolVector(base_, size_, 0, buffer, false));
+	}
+	virtual ConstantSP getValue(INDEX capacity) const {
+		capacity = (std::max)(capacity, (INDEX)size_);
+		int* data = new int[capacity];
+		memcpy(data, data_, size_);
+		return ConstantSP(new FastSymbolVector(base_, size_, capacity, data, false));
+	}
 	virtual bool append(const ConstantSP& value, INDEX appendSize){
 		if(!checkCapacity(appendSize))
 			return false;

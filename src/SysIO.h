@@ -8,8 +8,6 @@
 #ifndef SYSIO_H_
 #define SYSIO_H_
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <iostream>
 #include <string>
 
@@ -30,11 +28,19 @@
 	#include <winsock2.h>
 	#include <windows.h>
 #endif
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
 #ifdef _MSC_VER
-#define EXPORT_DECL _declspec(dllexport)
+	#ifdef _USRDLL	
+		#define EXPORT_DECL _declspec(dllexport)
+	#else
+		#define EXPORT_DECL __declspec(dllimport)
+	#endif
 #else
-#define EXPORT_DECL 
-#endif 
+	#define EXPORT_DECL 
+#endif
 
 using std::string;
 

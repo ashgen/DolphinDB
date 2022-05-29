@@ -14,17 +14,21 @@
 
 namespace dolphindb {
 
-short ConstantMarshallImp::encodeFlag(const ConstantSP& target, COMPRESS_METHOD compress){
+#define DLOG //DLogger::Info
+
+short ConstantMarshallImp::encodeFlag(const ConstantSP& target, bool compress){
 	short flag = target->getForm() << 8;
-	if (compress == COMPRESS_METHOD::COMPRESS_NONE) {
+	if (compress == false) {
 		if (target->isTable()) {
 			flag += ((Table*)target.get())->getTableType();
-			flag = flag | (8 & 0xff); //change the value of flag
 		}else
 			flag += (target->isVector() && target->getType() == DT_SYMBOL) ? DT_SYMBOL + 128 : target->getType();
 	}
 	else {
-		flag += DT_COMPRESS;
+		if (target->isTable())
+			flag += COMPRESSTBL;
+		else
+			flag += DT_COMPRESS;
 	}
 	return flag;
 }
@@ -177,7 +181,7 @@ bool VectorMarshall::start(const char* requestHeader, size_t headerSize, const C
 	if (compress && target->getType() != DT_SYMBOL) {
 		type = compressMethod_;
 	}
-	flag = encodeFlag(target, type);
+	flag = encodeFlag(target, type != COMPRESS_METHOD::COMPRESS_NONE);
 	memcpy(buf_ + offset, (char*)&flag, sizeof(short));
 	offset += sizeof(short);
 
@@ -279,7 +283,7 @@ void MatrixMarshall::reset(){
 	vectorMarshall_.reset();
 }
 
-bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret) {
+bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret) {
 	if(headerSize > 1024){
 		ret = INVALIDDATA;
 		return false;
@@ -287,7 +291,7 @@ bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const
 	else if(headerSize > 0)
 		memcpy(buf_, requestHeader, headerSize);
 
-	short flag = encodeFlag(target);
+	short flag = encodeFlag(target, compress);
 	memcpy(buf_ + headerSize, (char*)&flag,sizeof(short));
 	headerSize += sizeof(short);
 
@@ -340,7 +344,7 @@ bool TableMarshall::start(const char* requestHeader, size_t headerSize, const Co
 	TableSP table(target);
 	if(!blocking)
 		target_ = table;
-	if(!sendMeta(requestHeader, headerSize, table, blocking, ret))
+	if(!sendMeta(requestHeader, headerSize, table, blocking, compress, ret))
 		return false;
 
 	ret = OK;
@@ -454,18 +458,37 @@ bool ChunkMarshall::start(const char* requestHeader, size_t headerSize, const Co
 	complete_ = false;
 	DFSChunkMeta* chunk = (DFSChunkMeta*)target.get();
 	Buffer buffer(buf_, headerSize + 256);
-	if(headerSize > 0)
-		buffer.write(requestHeader, headerSize);
+	if (headerSize > 0) {
+		ret = buffer.write(requestHeader, headerSize);
+		if (ret != OK)
+			return false;
+	}
 	short flag = encodeFlag(target);
-	buffer.write(flag);
-	buffer.write((short)0); //size of the following data. will change this part later
-	buffer.write(chunk->getPath());
-	buffer.write((const char*)chunk->getId().bytes(),16);
-	buffer.write(chunk->getVersion());
-	buffer.write(chunk->size());
-	buffer.write((char)chunk->getChunkType());
+	ret = buffer.write(flag);
+	if (ret != OK)
+		return false;
+	ret = buffer.write((short)0); //size of the following data. will change this part later
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->getPath());
+	if (ret != OK)
+		return false;
+	ret = buffer.write((const char*)chunk->getId().bytes(),16);
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->getVersion());
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->size());
+	if (ret != OK)
+		return false;
+	ret = buffer.write((char)chunk->getChunkType());
+	if (ret != OK)
+		return false;
 	int copyCount = chunk->getCopyCount();
-	buffer.write((char)chunk->getCopyCount());
+	ret = buffer.write((char)chunk->getCopyCount());
+	if (ret != OK)
+		return false;
 	for(int i=0; i<copyCount; ++i){
 		ret = buffer.write(chunk->getCopySite(i));
 		if(ret != OK)
@@ -603,14 +626,16 @@ bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 	DATA_TYPE type;
 	decodeFlag(flag, form, type);
 	DataInputStreamSP input = in_;
-	DataOutputStreamSP compressOutput = new DataOutputStream();
+	DataOutputStreamSP decompressOutput = new DataOutputStream();
 	CompressionFactory::Header compressHeader;
+	int valueSize = -1;
 	if (type == DT_COMPRESS) {
-		ret = CompressionFactory::decode(input, compressOutput, compressHeader);
+		ret = CompressionFactory::decode(input, decompressOutput, compressHeader);
 		if (ret != OK)
 			return false;
-		input = new DataInputStream(compressOutput->getBuffer(), compressOutput->size(), false);
+		input = new DataInputStream(decompressOutput->getBuffer(), decompressOutput->size(), false);
 		type = (DATA_TYPE)compressHeader.dataType;
+		valueSize = compressHeader.extra;
 	}
 	rows_ = -1;
 	columns_ = -1;
@@ -647,7 +672,9 @@ bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 			obj_ = Util::createVector(actualType, rows_);
 		else {
 			obj_ = Util::createArrayVector(actualType, rows_);
-			if(columns_ > 0)
+			if(valueSize > 0)
+				((FastArrayVector*)obj_.get())->reserveValue(compressHeader.extra);
+			else if(columns_ > 0)
 				((FastArrayVector*)obj_.get())->reserveValue(columns_);
 		}
 	}

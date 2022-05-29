@@ -11,9 +11,13 @@
 #include "DolphinDB.h"
 #include "SysIO.h"
 #ifdef _MSC_VER
-#define EXPORT_DECL _declspec(dllexport)
+	#ifdef _USRDLL	
+		#define EXPORT_DECL _declspec(dllexport)
+	#else
+		#define EXPORT_DECL __declspec(dllimport)
+	#endif
 #else
-#define EXPORT_DECL 
+	#define EXPORT_DECL 
 #endif
 
 #define MARSHALL_BUFFER_SIZE 4096
@@ -45,7 +49,7 @@ public:
 	virtual IO_ERR flush();
 
 protected:
-	short encodeFlag(const ConstantSP& target, COMPRESS_METHOD compress = COMPRESS_METHOD::COMPRESS_NONE);
+	short encodeFlag(const ConstantSP& target, bool compress = false);
 protected:
 	BufferWriter<DataOutputStreamSP> out_;
 	ConstantSP target_;
@@ -136,7 +140,7 @@ public:
 	virtual bool start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret);
 	virtual void reset();
 private:
-	bool sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret);
+	bool sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret);
 
 private:
 	int columnNamesSent_;

@@ -1135,11 +1135,13 @@ IO_ERR DataOutputStream::write(const char* buffer, size_t length, size_t& actual
 
 	case ARRAY_STREAM:
 		if(size_ + length > capacity_){
-			if(capacity_ >= MAX_ARRAY_BUFFER)
-				return TOO_LARGE_DATA;
+			//if(capacity_ >= MAX_ARRAY_BUFFER)
+			//	return TOO_LARGE_DATA;
 			char* tmp = buf_;
 			size_t newCapacity = (std::max)(size_ + length, 2 * capacity_);
 			buf_ = new char[newCapacity];
+			if(buf_ == NULL)
+				return TOO_LARGE_DATA;
 			capacity_ = newCapacity;
 			memcpy(buf_, tmp, size_);
 			delete[] tmp;
@@ -1200,11 +1202,13 @@ IO_ERR DataOutputStream::write(const char* buffer, size_t length){
 
 	case ARRAY_STREAM:
 		if(size_ + length > capacity_){
-			if(capacity_ >= MAX_ARRAY_BUFFER)
-				return TOO_LARGE_DATA;
+			//if(capacity_ >= MAX_ARRAY_BUFFER)
+			//	return TOO_LARGE_DATA;
 			char* tmp = buf_;
 			size_t newCapacity = (std::max)(size_ + length, 2 * capacity_);
 			buf_ = new char[newCapacity];
+			if(buf_ == NULL)
+				return TOO_LARGE_DATA;
 			capacity_ = newCapacity;
 			memcpy(buf_, tmp, size_);
 			delete[] tmp;
@@ -1559,11 +1563,13 @@ string DataStream::getDescription() const {
 IO_ERR Buffer::write(const char* buffer, int length, int& actualLength){
 	actualLength = 0;
 	if(size_ + length > capacity_){
-		if(external_ || capacity_ >= MAX_ARRAY_BUFFER)
-			return TOO_LARGE_DATA;
+		//if(external_ || capacity_ >= MAX_ARRAY_BUFFER)
+		//	return TOO_LARGE_DATA;
 		char* tmp = buf_;
 		size_t newCapacity = (std::max)(size_ + length, 2 * capacity_);
 		buf_ = new char[newCapacity];
+		if(buf_ == NULL)
+			return TOO_LARGE_DATA;
 		capacity_ = newCapacity;
 		memcpy(buf_, tmp, size_);
 		delete[] tmp;
@@ -1576,11 +1582,13 @@ IO_ERR Buffer::write(const char* buffer, int length, int& actualLength){
 
 IO_ERR Buffer::write(const char* buffer, int length){
 	if(size_ + length > capacity_){
-		if(external_ || capacity_ >= MAX_ARRAY_BUFFER)
-			return TOO_LARGE_DATA;
+		//if(external_ || capacity_ >= MAX_ARRAY_BUFFER)
+		//	return TOO_LARGE_DATA;
 		char* tmp = buf_;
 		size_t newCapacity = (std::max)(size_ + length, 2 * capacity_);
 		buf_ = new char[newCapacity];
+		if(buf_ == NULL)
+			return TOO_LARGE_DATA;
 		capacity_ = newCapacity;
 		memcpy(buf_, tmp, size_);
 		delete[] tmp;
