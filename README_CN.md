@@ -175,6 +175,8 @@ g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=1 -DLOGGING_LEVEL_2 -O2
 
 ### 2.2 Windows环境下编译
 
+本节将简要介绍在windows上如何编译C++ API,更详细的介绍请参阅[用VS2017编译DolphinDB C++ API动态库](https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md)
+
 #### 2.2.1 环境配置
 
 本教程使用了Visual Studio 2017 64位版本。
