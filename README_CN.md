@@ -22,13 +22,13 @@ DolphinDB C++ API支持以下开发环境：
 
 ## 1. 编译libDolphinDBAPI
 
-用户可以使用github或者gitee已经编译好的libDolphinDBAPI, 也可以通过如下方法自己编译libDolphinDBAPI。 
+用户可以使用bin目录下已编译的libDolphinDBAPI, 也可以通过如下方法自己编译libDolphinDBAPI。 
 
 ### 1.1 在Linux环境下编译API
 
 #### 编译libuuid
 
-DolphinDB API会调用到libuuid,所以要先编译libuuid的静态库。编译方法如下:
+DolphinDB API会用到libuuid,所以要先编译libuuid的静态库。编译方法如下:
 
 * 下载 [libuuid-1.0.3.tar.gz](https://sourceforge.net/projects/libuuid/files/)
 
@@ -65,8 +65,6 @@ mingw32-make -f makefile.win32
 
 
 ### 1.3 在Windows环境下，用Visual Studio 2017编译API
-
-
 
 #### 创建项目 libDolphinDBAPI
 
@@ -105,7 +103,9 @@ libeay32MD.lib
 
 #### 编译
 
-编译的时候选择release和x64.如果编译成功，在/username/source/repos/libDolphinDBPAI/x64/Release目录下会生成：libDolphinDBAPI.lib和libDolphinDBAPI.dll
+编译的时候选择release和x64.如果编译成功，在/username/source/repos/libDolphinDBPAI/x64/Release目录下会生成：libDolphinDBAPI.lib和libDolphinDBAPI.dll。
+
+> 更详细的介绍请参阅[用VS2017编译DolphinDB C++ API动态库](https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md)
 
 
 ## 2. 项目编译
@@ -175,7 +175,7 @@ g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=1 -DLOGGING_LEVEL_2 -O2
 
 ### 2.2 Windows环境下编译
 
-本节将简要介绍在windows上如何编译C++ API,更详细的介绍请参阅[用VS2017编译DolphinDB C++ API动态库](https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md)
+本节将简要介绍在windows上如何使用C++ API,更详细的介绍请参阅[用VS2017编译DolphinDB C++ API动态库]([https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md](https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md#4-%E6%A1%88%E4%BE%8B%E9%AA%8C%E8%AF%81))第4节。
 
 #### 2.2.1 环境配置
 
