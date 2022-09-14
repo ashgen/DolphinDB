@@ -1,5 +1,11 @@
 # DolphinDB C++ API
 
+<p align='center'>
+    <img src='images/ddb.svg' alt='DolphinDB' width='256'>
+</p>
+
+## English | [中文](./README_CN.md)
+
 DolphinDB C++ API supports the following development environments:
 * Linux
 * Windows Visual Studio
