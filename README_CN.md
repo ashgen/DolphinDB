@@ -1,7 +1,5 @@
 # DolphinDB C++ API
 
-# DolphinDB C++ API
-
 <p align='center'>
     <img src='images/ddb.svg' alt='DolphinDB' width='256'>
 </p>
