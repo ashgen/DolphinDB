@@ -34,9 +34,7 @@ DolphinDB API会用到libuuid，所以要先编译libuuid的静态库。编译�
 
 * 解压：tar -xvf libuuid-1.0.3.tar.gz
 
-* cd libuuid-1.0.3 && ./configure
-
-* 修改makefile： 添加 '-fPIC' 到CFLAGS和CPPFLAGS
+* cd libuuid-1.0.3 && ./configure CFLAGS="-fPIC" CPPFLAGS="-fPIC" && make
 
 * 如果编译成功， libuuid.a 会生成在目录 '.libs'下
 
@@ -48,7 +46,8 @@ DolphinDB API会用到libuuid，所以要先编译libuuid的静态库。编译�
 
 ``` 
 cd api-cplusplus
-make clean & make -j4
+mkdir build && cd build
+cmake .. && make
 ```
 
 如果编译成功，会自动生成libDolphinDBAPI.so 
@@ -109,7 +108,6 @@ libeay32MD.lib
 
 > 更详细的介绍请参阅[用VS2017编译DolphinDB C++ API动态库](https://github.com/dolphindb/Tutorials_CN/blob/master/cpp_api_vs2017_tutorial.md)
 
-
 ## 2. 项目编译
 
 ### 2.1 在Linux环境下编译项目
@@ -163,12 +161,12 @@ int main(int argc, char *argv[]){
 
 以下是使用第一个动态库版本的g++编译命令：
 ```
-g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=0 -DLOGGING_LEVEL_2 -O2 -I../include   -lDolphinDBAPI -lpthread -lssl -L../bin/linux_x64/ABI0  -Wl,-rpath,.:../bin/linux_x64/ABI0 -o main
+g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=0 -DLOGGING_LEVEL_2 -O2 -I../include   -lDolphinDBAPI -lpthread -lssl -lrt -L../bin/linux_x64/ABI0  -Wl,-rpath,.:../bin/linux_x64/ABI0 -o main
 ```
 
 以下是使用另一个动态库版本的g++编译命令：
 ```
-g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=1 -DLOGGING_LEVEL_2 -O2 -I../include   -lDolphinDBAPI -lpthread -lssl -L../bin/linux_x64/ABI1  -Wl,-rpath,.:../bin/linux_x64/ABI1 -o main
+g++ main.cpp -std=c++11 -DLINUX -D_GLIBCXX_USE_CXX11_ABI=1 -DLOGGING_LEVEL_2 -O2 -I../include   -lDolphinDBAPI -lpthread -lssl -lrt -L../bin/linux_x64/ABI1  -Wl,-rpath,.:../bin/linux_x64/ABI1 -o main@
 ```
 
 #### 2.1.5 运行
@@ -626,41 +624,6 @@ cout<<v->getString()<<endl;
 ```
 
 结果是一个Int类型的向量[1,3,5]。
-
-### 7.7 ArrayVector
-
-数组向量（array vector）是 DolphinDB 一种特殊的数据形式。与常规的向量不同，它的每个元素是一个数组，具有相同的数据类型，但长度可以不同。目前支持的数据类型为 Logical, Integral（不包括 COMPRESS 类型）, Floating, Temporal。 
-
-```cpp
-//创建可容纳2个元素的arrayVector，初始大小为1，可容纳2个。
-VectorSP arrayVector = Util::createVector(DT_INT_ARRAY, 1, 2);
-//创建第一个元素
-VectorSP value = Util::createVector(DT_INT, 3);
-value->setInt(0, 1);
-value->setInt(1, 2);
-value->setInt(2, 3);
-//设置第一个元素
-arrayVector->set(0, value);
-//创建第二个元素
-value = Util::createVector(DT_INT, 3);
-value->setInt(0, 4);
-value->setInt(1, 5);
-value->setInt(2, 6);
-//添加第二个元素
-arrayVector->append(value);
-std::cout << arrayVector->getString() << std::endl;
-```
-
-结果是[[1,2,3],[4,5,6]]。
-
-使用 `get` 方法获取第二个元素：
-
-```cpp
-VectorSP v = result->get(1); 
-cout<<v->getString()<<endl; 
-```
-
-结果是一个Int类型的向量[4,5,6]。
 
 ## 8. 保存数据到DolphinDB数据表
 
