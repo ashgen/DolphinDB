@@ -67,7 +67,7 @@ Download the following files:
 
 #### 1.1.3 Compile main.cpp
 
-Create a directory "project" on the same level as "bin" and "include" folders. Create the file main.cpp in the "project" folder.  
+Create a directory "project" on the same level as "bin" and "include" folders. Create the file main.cpp in the "project" folder. 
 ```
 #include "DolphinDB.h"
 #include "Util.h"
@@ -114,7 +114,7 @@ After successfully compiling the program "main", start a DolphinDB server, then 
 
 #### 1.2.1 Environment Setup
 
-This tutorial uses Visual Studio 2017 64 bit version. 
+This tutorial uses Visual Studio 2017 64 bit version.
 
 #### 1.2.2 Download bin file and header files
 
