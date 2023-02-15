@@ -15,14 +15,11 @@
 #include <cassert>
 
 #ifdef _MSC_VER
-	#ifdef _USRDLL	
-		#define EXPORT_DECL _declspec(dllexport)
-	#else
-		#define EXPORT_DECL __declspec(dllimport)
-	#endif
+	#define EXPORT_DECL _declspec(dllexport)
 #else
 	#define EXPORT_DECL 
 #endif
+
 
 namespace dolphindb{
 
@@ -80,7 +77,6 @@ public:
      */
     template<typename... Targs>
     void insert(const string& dbName, const string& tableName, Targs... Fargs){
-        //RECORDTIME("BTW::insert");
         SmartPointer<DestTable> destTable;
         {
             RWLockGuard<RWLock> _(&rwLock, false, acquireLock_);
@@ -118,16 +114,11 @@ private:
         SynchronizedQueue<std::vector<ConstantSP>> saveQueue;
         ThreadSP writeThread;
         TableSP writeTable;
-
-        Mutex writeMutex;
-        ConditionalVariable writeNotifier;
-        
         int sendedRows = 0;
         bool destroy = false;
         bool finished = false;
     };
-    //write failed or no data
-    bool writeTableAllData(SmartPointer<DestTable> destTable,bool partitioned);
+
     void insertRecursive(std::vector<ConstantSP>* row, DestTable* destTable, int colIndex){
         assert(colIndex == destTable->columnNum);
         RWLockGuard<RWLock> _(&rwLock, false, acquireLock_);
@@ -135,7 +126,6 @@ private:
             throw RuntimeException(std::string("Failed to insert data. Error writing data in backgroud thread. Please use getUnwrittenData to get data not written to server and remove talbe (") + destTable->dbName + " " + destTable->tableName + ").");
         }
         destTable->writeQueue.push(std::move(*row));
-        destTable->writeNotifier.notify();
     }
 
     template<typename T, typename... Targs>

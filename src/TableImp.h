@@ -60,8 +60,7 @@ public:
 	virtual bool update(vector<ConstantSP>& values, const ConstantSP& indexSP, vector<string>& colNames, string& errMsg);
 	virtual bool remove(const ConstantSP& indexSP, string& errMsg);
 	virtual ConstantSP getSubTable(vector<int> indices) const = 0;
-	virtual COMPRESS_METHOD getColumnCompressMethod(INDEX index);
-	virtual void setColumnCompressMethods(const vector<COMPRESS_METHOD> &methods);
+
 
 protected:
 	ConstantSP getInternal(INDEX index) const;
@@ -77,7 +76,6 @@ protected:
 	SmartPointer<vector<string>> colNames_;
 	SmartPointer<unordered_map<string,int>> colMap_;
 	string name_;
-	vector<COMPRESS_METHOD> colCompresses_;
 };
 
 
@@ -92,7 +90,7 @@ public:
 	virtual DATA_TYPE getColumnType(const int index) const { return cols_[index]->getType();}
 	virtual void setColumnName(int index, const string& name);
 	virtual INDEX size() const {return size_;}
-	virtual bool sizeable() const {return isReadOnly()==false;}
+	virtual bool sizeable() const {return !readOnly_;}
 	virtual bool set(INDEX index, const ConstantSP& value);
 	virtual ConstantSP get(INDEX index) const;
 	virtual ConstantSP get(const ConstantSP& index) const;
@@ -122,7 +120,7 @@ private:
 
 private:
 	vector<ConstantSP> cols_;
-	//bool readOnly_;
+	bool readOnly_;
 	INDEX size_;
 	INDEX capacity_;
 };

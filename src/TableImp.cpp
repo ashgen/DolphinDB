@@ -243,36 +243,6 @@ string AbstractTable::getString() const {
     return resultStr;
 }
 
-COMPRESS_METHOD AbstractTable::getColumnCompressMethod(INDEX index) {
-	if (index < colCompresses_.size())
-		return colCompresses_[index];
-	else
-		return COMPRESS_NONE;
-}
-
-void AbstractTable::setColumnCompressMethods(const vector<COMPRESS_METHOD> &colCompresses) {
-	if (colCompresses.size() > 0 && colCompresses.size() != colNames_->size()) {
-		throw RuntimeException("The number of elements in parameter compressMethods does not match the column size "+std::to_string(colNames_->size())+".");
-	}
-	for (size_t i = 0; i < colCompresses.size(); i++) {
-		if (colCompresses[i] == COMPRESS_DELTA) {
-			DATA_TYPE dataType = getColumn(i)->getRawType();
-			if (dataType != DT_SHORT && dataType != DT_INT && dataType != DT_LONG) {
-				throw RuntimeException("Cannot apply compression method DELTA to column "+colNames_->at(i)+", Only SHORT/INT/LONG or temporal data supports DELTA compression");
-			}
-			if (((Vector*)getColumn(i).get())->getVectorType() == VECTOR_TYPE::ARRAYVECTOR) {
-				throw RuntimeException("Cannot apply compression method DELTA to array vector at column "+colNames_->at(i));
-			}
-		}
-		else if (colCompresses[i] == COMPRESS_LZ4) {
-		}
-		else {
-			throw RuntimeException("Unsupported compression method at column "+colNames_->at(i));
-		}
-	}
-	colCompresses_ = colCompresses;
-}
-
 ConstantSP AbstractTable::getInternal(INDEX index) const {
 	Dictionary* dict=Util::createDictionary(DT_STRING,DT_ANY);
 	ConstantSP resultSP(dict);
@@ -385,11 +355,11 @@ bool AbstractTable::remove(const ConstantSP& indexSP, string& errMsg) {
 	return false;
 }
 
-BasicTable::BasicTable(const vector<ConstantSP>& cols, const vector<string>& colNames) : AbstractTable(new vector<string>(colNames)){
+BasicTable::BasicTable(const vector<ConstantSP>& cols, const vector<string>& colNames) : AbstractTable(new vector<string>(colNames)), readOnly_(false){
 	initData(cols, colNames);
 }
 
-BasicTable::BasicTable(const vector<ConstantSP>& cols, const vector<string>& colNames, const vector<int>& keys) : AbstractTable(new vector<string>(colNames)){
+BasicTable::BasicTable(const vector<ConstantSP>& cols, const vector<string>& colNames, const vector<int>& keys) : AbstractTable(new vector<string>(colNames)), readOnly_(false){
 	initData(cols, colNames);
 }
 
@@ -507,7 +477,7 @@ ConstantSP BasicTable::getInstance(int size) const {
 }
 
 bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string& errMsg){
-	if(isReadOnly()){
+	if(readOnly_){
 		errMsg = "Can't modify read only table.";
 		return false;
 	}
@@ -527,13 +497,9 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 			return false;
 		int i=0;
 		try{
-			string msg;
 			for(;i<num;++i){
-				if(!((Vector*)cols_[i].get())->append(tbl->getColumn(i))){
-					msg = "data type " + Util::getDataTypeString(tbl->getColumn(i)->getType()) + ", expect "+
-							Util::getDataTypeString(cols_[i]->getType());
+				if(!((Vector*)cols_[i].get())->append(tbl->getColumn(i)))
 					break;
-				}
 			}
 			if(i >= num){
 				insertedRows = rows;
@@ -543,7 +509,7 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 			else{
 				for(int k=0; k<i; ++k)
 					((Vector*)cols_[k].get())->remove(rows);
-				errMsg = "Failed to append data to column '" + getColumnName(i) +"' reason: " + msg;
+				errMsg = "Failed to append data to column '" + getColumnName(i) +"' ";
 				return false;
 			}
 		}
@@ -567,14 +533,10 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 			return false;
 		int i=0;
 		try{
-			string msg;
 			for(;i<num;++i){
 				ConstantSP col = tbl->get(i);
-				if(col->size() != rows || !((Vector*)cols_[i].get())->append(col)){
-					msg = "data type " + Util::getDataTypeString(col->getType()) + ", expect "+
-							Util::getDataTypeString(cols_[i]->getType());
+				if(col->size() != rows || !((Vector*)cols_[i].get())->append(col))
 					break;
-				}
 			}
 			if(i >= num){
 				insertedRows = rows;
@@ -584,7 +546,7 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 			else{
 				for(int k=0; k<i; ++k)
 					((Vector*)cols_[k].get())->remove(rows);
-				errMsg = "Failed to append data to column '" + getColumnName(i) +"' reason: " + msg;
+				errMsg = "Failed to append data to column '" + getColumnName(i) +"' ";
 				return false;
 			}
 		}
@@ -612,13 +574,9 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 
 		int i=0;
 		try{
-			string msg;
 			for(;i<num;i++){
-				if(!((Vector*)cols_[i].get())->append(values[i])){
-					msg = "data type " + Util::getDataTypeString(values[i]->getType()) + ", expect "+
-							Util::getDataTypeString(cols_[i]->getType());
+				if(!((Vector*)cols_[i].get())->append(values[i]))
 					break;
-				}
 			}
 			if(i >= num){
 				insertedRows = rows;
@@ -629,7 +587,7 @@ bool BasicTable::append(vector<ConstantSP>& values, INDEX& insertedRows, string&
 				for(int k=0; k<i; ++k){
 					((Vector*)cols_[k].get())->remove(rows);
 				}
-				errMsg = "Failed to append data to column '" + getColumnName(i) +"' reason: " + msg;
+				errMsg = "Failed to append data to column '" + getColumnName(i) +"'";
 				return false;
 			}
 		}
@@ -649,14 +607,10 @@ bool BasicTable::internalAppend(vector<ConstantSP>& values, string& errMsg){
 
 	int i=0;
 	try{
-		string msg;
 		int cols = values.size();
 		for(; i<cols; i++){
-			if(!((Vector*)cols_[i].get())->append(values[i])){
-				msg = "data type " + Util::getDataTypeString(values[i]->getType()) + ", expect "+
-						Util::getDataTypeString(cols_[i]->getType());
+			if(!((Vector*)cols_[i].get())->append(values[i]))
 				break;
-			}
 		}
 		if(i >= cols){
 			size_+=rows;
@@ -666,7 +620,7 @@ bool BasicTable::internalAppend(vector<ConstantSP>& values, string& errMsg){
 			for(int k=0; k<i; ++k){
 				((Vector*)cols_[k].get())->remove(rows);
 			}
-			errMsg = "Failed to append data to column '" + getColumnName(i) +"' reason: " + msg;
+			errMsg = "Failed to append data to column '" + getColumnName(i) +"'";
 			return false;
 		}
 	}
@@ -679,7 +633,7 @@ bool BasicTable::internalAppend(vector<ConstantSP>& values, string& errMsg){
 }
 
 bool BasicTable::update(vector<ConstantSP>& values, const ConstantSP& indexSP, vector<string>& colNames, string& errMsg){
-	if(isReadOnly()){
+	if(readOnly_){
 		errMsg = "Can't modify read only table.";
 		return false;
 	}
@@ -751,7 +705,7 @@ bool BasicTable::internalUpdate(vector<ConstantSP>& values, const ConstantSP& in
 
 
 bool BasicTable::remove(const ConstantSP& indexSP, string& errMsg){
-	if(isReadOnly()){
+	if(readOnly_){
 		errMsg = "Can't remove rows from a read only in-memory table.";
 		return false;
 	}
@@ -764,20 +718,17 @@ bool BasicTable::internalRemove(const ConstantSP& indexSP, string& errMsg){
 
 	for(int i=0; i<colCount; ++i){
 		VectorSP curCol(cols_[i]);
-		if (noIndex)
+		if(noIndex)
 			curCol->clear();
 		else
-			if (!curCol->remove(indexSP)) {
-				//FIXME If we need restor vector?
-				throw RuntimeException("Invalid index array.");
-			}
+			curCol->remove(indexSP);
 	}
 	size_ = cols_[0]->size();
 	return true;
 }
 
 void BasicTable::drop(vector<int>& columns){
-	if(isReadOnly())
+	if(readOnly_)
 		throw RuntimeException("Can't drop columns of a read only in-memory table.");
 	internalDrop(columns);
 }
@@ -803,7 +754,7 @@ void BasicTable::internalDrop(vector<int>& columns){
 }
 
 bool BasicTable::join(vector<ConstantSP>& columns){
-	if(isReadOnly())
+	if(readOnly_)
 		return false;
 
 	int num = columns.size();
@@ -825,7 +776,7 @@ bool BasicTable::join(vector<ConstantSP>& columns){
 }
 
 bool BasicTable::clear(){
-	if(isReadOnly())
+	if(readOnly_)
 		return false;
 	int num = columns();
 	for(int i=0; i<num; ++i)
@@ -843,7 +794,7 @@ long long BasicTable::getAllocatedMemory() const {
 }
 
 void BasicTable::updateSize() {
-	if(isReadOnly())
+	if(readOnly_)
 		return;
 
 	/* All columns are updated outside the table. So we need to update the size internally. */

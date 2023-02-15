@@ -8,6 +8,8 @@
 #ifndef SYSIO_H_
 #define SYSIO_H_
 
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <iostream>
 #include <string>
 
@@ -17,10 +19,7 @@
 #define MAX_CAPACITY 65536
 #define MAX_PACKET_SIZE 1400
 
-#ifdef WINDOWS
-	#include <winsock2.h>
-	#include <windows.h>
-#else
+#ifdef LINUX
 	#include <netinet/in.h>
     #include <netinet/tcp.h>
     #include <sys/socket.h>
@@ -28,19 +27,11 @@
 	#define INVALID_SOCKET -1
 	#define SOCKET_ERROR   -1
 #endif
-
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
 #ifdef _MSC_VER
-	#ifdef _USRDLL	
-		#define EXPORT_DECL _declspec(dllexport)
-	#else
-		#define EXPORT_DECL __declspec(dllimport)
-	#endif
+#define EXPORT_DECL _declspec(dllexport)
 #else
-	#define EXPORT_DECL 
-#endif
+#define EXPORT_DECL 
+#endif 
 
 using std::string;
 
@@ -79,15 +70,10 @@ public:
 	bool isBlockingMode() const {return blocking_;}
 	bool isValid();
 	void setAutoClose(bool option) { autoClose_ = option;}
-	static void enableTcpNoDelay(bool enable);
 	static bool ENABLE_TCP_NODELAY;
-	bool skipAll();
 
 private:
-	void getTimeout(int &timeoutMs);
-	void setTimeout(int timeoutMs);
 	bool setNonBlocking();
-	bool setBlocking();
 	bool setTcpNoDelay();
 	int getErrorCode();
 
@@ -201,6 +187,7 @@ public:
 	 * Reset the size of an external buffer. The cursor moves to the beginning of the buffer.
 	 */
 	bool reset(int size);
+
 protected:
 	/**
 	 * Read up to number of bytes specified by the length. If the underlying device doesn't have even one byte

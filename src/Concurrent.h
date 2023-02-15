@@ -12,7 +12,6 @@
 #include <queue>
 #include <cassert>
 #include <algorithm>
-#include <memory>
 
 #ifdef WINDOWS
 	#include <winsock2.h>
@@ -26,13 +25,9 @@
 #include "SmartPointer.h"
 
 #ifdef _MSC_VER
-	#ifdef _USRDLL	
-		#define EXPORT_DECL _declspec(dllexport)
-	#else
-		#define EXPORT_DECL __declspec(dllimport)
-	#endif
+#define EXPORT_DECL _declspec(dllexport)
 #else
-	#define EXPORT_DECL 
+#define EXPORT_DECL 
 #endif
 namespace dolphindb {
 
@@ -127,7 +122,7 @@ private:
 
 
 template<class T>
-class LockGuard{
+class EXPORT_DECL LockGuard{
 public:
 	LockGuard(T* res, bool acquireLock = true):res_(res){
 		if(acquireLock)
@@ -150,7 +145,7 @@ private:
 };
 
 template<class T>
-class TryLockGuard{
+class EXPORT_DECL TryLockGuard{
 public:
 	TryLockGuard(T* res, bool acquireLock = true):res_(res), locked_(false){
 		if(acquireLock)
@@ -169,7 +164,7 @@ private:
 };
 
 template<class T>
-class RWLockGuard{
+class EXPORT_DECL RWLockGuard{
 public:
 	RWLockGuard(T* res, bool exclusive, bool acquireLock = true):res_(res), exclusive_(exclusive){
 		if(res != NULL && acquireLock){
@@ -206,7 +201,7 @@ private:
 };
 
 template<class T>
-class TryRWLockGuard{
+class EXPORT_DECL TryRWLockGuard{
 public:
 	TryRWLockGuard(T* res, bool exclusive, bool acquireLock = true):res_(res), exclusive_(exclusive), locked_(false){
 		if(acquireLock){
@@ -248,7 +243,7 @@ private:
 
 
 template<class T>
-class Future {
+class EXPORT_DECL Future {
 public:
 	Future(): latch_(1) {}
 	//Wait till the result is ready or the specified milliseconds timeout. Return whether the result is ready.
@@ -272,20 +267,15 @@ private:
 
 class EXPORT_DECL Semaphore{
 public:
-	Semaphore(int resources = 0);
+	Semaphore(int resources);
 	~Semaphore();
 	void acquire();
-	bool tryAcquire(int waitMilliSeconds = 0);
+	bool tryAcquire();
 	void release();
 
 private:
 #ifdef WINDOWS
 	HANDLE sem_;
-#elif defined MAC
-	sem_t *sem_;
-	// static std::atomic<long long> sem_id_;
-	long long sem_id_;
-	static Mutex globalIdMutex_;
 #else
 	sem_t sem_;
 #endif
@@ -295,14 +285,8 @@ class EXPORT_DECL ConditionalNotifier {
 public:
 	ConditionalNotifier() {}
 	~ConditionalNotifier() {}
-	void wait() {
-		LockGuard<Mutex> guard(&mtx_);
-		cv_.wait(mtx_);
-	}
-	bool wait(int milliSeconds) {
-		LockGuard<Mutex> guard(&mtx_);
-		return cv_.wait(mtx_, milliSeconds);
-	}
+	void wait() { cv_.wait(mtx_); }
+	bool wait(int milliSeconds) { return cv_.wait(mtx_, milliSeconds); }
 	void notify() { cv_.notify(); }
 	void notifyAll() { cv_.notifyAll(); }
 private:
@@ -311,7 +295,7 @@ private:
 };
 
 template<class T>
-class BoundedBlockingQueue{
+class EXPORT_DECL BoundedBlockingQueue{
 public:
 	BoundedBlockingQueue(size_t maxItems) : capacity_(maxItems), size_(0), head_(0), tail_(0){
 		buf_ = new T[maxItems];
@@ -360,7 +344,7 @@ private:
 };
 
 template<class T>
-class SynchronizedQueue{
+class EXPORT_DECL SynchronizedQueue{
 public:
 	SynchronizedQueue(){}
 	void push(const T& item){
@@ -457,7 +441,6 @@ public:
 	bool isRunning(){return run_.isNull() ? false : run_->isRunning();}
 	bool isComplete() {return run_.isNull()? false : run_->isComplete();}
 	bool isStarted() {return run_.isNull()? false : run_->isStarted();}
-	void setAffinity(int id);
 	static void sleep(int milliSeconds);
 	static int getID();
 
@@ -475,170 +458,6 @@ private:
 	pthread_t thread_;
 	pthread_attr_t attr_;
 #endif
-};
-
-class EXPORT_DECL SemLock{
-public:
-	SemLock(Semaphore &sem, bool acquired = false)
-		: sem_(sem)
-		, acquired_(acquired){
-	}
-	~SemLock(){
-		release();
-	}
-	bool tryAcquire(int waitMs){
-		if(!sem_.tryAcquire(waitMs)){
-			return false;
-		}
-		acquired_ = true;
-		return true;
-	}
-	void acquire(){
-		sem_.acquire();
-		acquired_ = true;
-	}
-	void release(){
-		if(acquired_){
-			acquired_=false;
-			sem_.release();
-		}
-	}
-private:
-	Semaphore &sem_;
-	bool acquired_;
-};
-
-class EXPORT_DECL Signal{
-public:
-	Signal(bool signaled = false, bool resetAfterWait = false):signaled_(signaled), resetAfterWait_(resetAfterWait){};
-	void set(){
-		LockGuard<Mutex> lock(&mutex_);
-		if(signaled_)
-			return;
-		signaled_ = true;
-		notifier_.notifyAll();
-	}
-	void reset(){
-		LockGuard<Mutex> lock(&mutex_);
-		signaled_ = false;
-	}
-	bool isSignaled(){
-		LockGuard<Mutex> lock(&mutex_);
-		return signaled_;
-	}
-	bool tryWait(int ms){
-		LockGuard<Mutex> lock(&mutex_);
-		if (signaled_ == false) {
-			notifier_.wait(mutex_, ms);
-		}
-		bool result = signaled_;
-		if (resetAfterWait_)
-			signaled_ = false;
-		return result;
-	}
-	void wait(){
-		LockGuard<Mutex> lock(&mutex_);
-		if (signaled_ == false) {
-			notifier_.wait(mutex_);
-		}
-		if (resetAfterWait_)
-			signaled_ = false;
-	}
-private:
-	bool signaled_, resetAfterWait_;
-	Mutex mutex_;
-	ConditionalVariable notifier_;
-};
-
-template <typename T>
-class BlockingQueue {
-public:
-    explicit BlockingQueue(size_t maxItems)
-        : buf_(new T[maxItems]), capacity_(maxItems), batchSize_(1), size_(0), head_(0), tail_(0) {}
-    explicit BlockingQueue(size_t maxItems, size_t batchSize)
-        : buf_(new T[maxItems]), capacity_(maxItems), batchSize_(batchSize), size_(0), head_(0), tail_(0) {}
-	int size(){
-		LockGuard<Mutex> guard(&lock_);
-		return size_;
-	}
-    void push(const T &item) {
-        lock_.lock();
-        while (size_ >= capacity_) full_.wait(lock_);
-        buf_[tail_] = item;
-        tail_ = (tail_ + 1) % capacity_;
-        ++size_;
-
-        if (size_ == 1) empty_.notifyAll();
-        if (size_ == batchSize_) batch_.notifyAll();
-        lock_.unlock();
-    }
-    void emplace(T &&item) {
-        lock_.lock();
-        while (size_ >= capacity_) full_.wait(lock_);
-        buf_[tail_] = std::move(item);
-        tail_ = (tail_ + 1) % capacity_;
-        ++size_;
-        if (size_ == 1) empty_.notifyAll();
-        if (size_ == batchSize_) batch_.notifyAll();
-        lock_.unlock();
-    }
-    bool poll(T &item, int milliSeconds) {
-        if (milliSeconds < 0) {
-            pop(item);
-            return true;
-        }
-        LockGuard<Mutex> guard(&lock_);
-        while (size_ == 0) {
-            if (!empty_.wait(lock_, milliSeconds)) return false;
-        }
-        item = std::move(buf_[head_]);
-        buf_[head_] = T();
-        head_ = (head_ + 1) % capacity_;
-        --size_;
-        full_.notifyAll();
-        return true;
-    }
-    void pop(T &item) {
-        lock_.lock();
-        while (size_ == 0) empty_.wait(lock_);
-        item = std::move(buf_[head_]);
-        buf_[head_] = T();
-        head_ = (head_ + 1) % capacity_;
-        --size_;
-        full_.notifyAll();
-        lock_.unlock();
-    }
-
-    bool pop(std::vector<T> &items, int milliSeconds) {
-        LockGuard<Mutex> guard(&lock_);
-        if (size_ < batchSize_){
-            batch_.wait(lock_, milliSeconds);
-        }
-        if(size_ == 0)
-            return false;
-        int n = std::min(batchSize_, size_);
-        items.resize(n);
-        for(int i = 0; i < n; i++){
-            items[i] = std::move(buf_[head_]);
-            buf_[head_] = T();
-            head_ = (head_ + 1) % capacity_;
-        }
-        full_.notifyAll();
-        size_ -= n;
-        return true;
-    }
-private:
-    std::unique_ptr<T[]> buf_;
-    size_t capacity_;
-    size_t batchSize_;
-    size_t size_;
-    size_t head_;
-    size_t tail_;
-    Mutex lock_;
-    ConditionalVariable full_;
-    ConditionalVariable empty_;
-    ConditionalVariable batch_;
-    
 };
 
 };

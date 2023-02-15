@@ -254,7 +254,6 @@ public:
 	virtual int getHash(int buckets) const { return murmur32_16b(uuid_) % buckets;}
 	static string toString(const unsigned char* data);
 	static Int128* parseInt128(const char* str, int len);
-	static bool parseInt128(const char* str, int len, unsigned char *buf);
 
 protected:
 	mutable unsigned char uuid_[16];
@@ -348,8 +347,8 @@ public:
 	}
 	virtual ConstantSP getInstance() const {return ConstantSP(new String("", blob_));}
 	virtual ConstantSP getValue() const {return ConstantSP(new String(val_, blob_));}
-	virtual DATA_TYPE getType() const {return blob_ == false ? DT_STRING : DT_BLOB;}
-	virtual DATA_TYPE getRawType() const {return blob_ == false ? DT_STRING : DT_BLOB;}
+	virtual DATA_TYPE getType() const {return DT_STRING;}
+	virtual DATA_TYPE getRawType() const { return DT_STRING;}
 	virtual DATA_CATEGORY getCategory() const {return LITERAL;}
 	virtual long long getAllocatedMemory() const {return sizeof(string)+val_.size();}
 	virtual int serialize(char* buf, int bufSize, INDEX indexStart, int offset, int& numElement, int& partial) const;
@@ -770,7 +769,6 @@ public:
 	virtual string getString() const { return toString(val_);}
 	static Date* parseDate(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class Month:public TemporalScalar{
@@ -785,7 +783,6 @@ public:
 	virtual string getString() const { return toString(val_);}
 	static Month* parseMonth(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class Time:public TemporalScalar{
@@ -800,7 +797,6 @@ public:
 	virtual void validate();
 	static Time* parseTime(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class NanoTime:public Long{
@@ -810,7 +806,6 @@ public:
 	virtual ~NanoTime(){}
 	virtual DATA_TYPE getType() const {return DT_NANOTIME;}
 	virtual DATA_CATEGORY getCategory() const {return TEMPORAL;}
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 	virtual ConstantSP getInstance() const {return ConstantSP(new NanoTime());}
 	virtual ConstantSP getValue() const {return ConstantSP(new NanoTime(val_));}
 	virtual string getString() const { return toString(val_);}
@@ -826,7 +821,6 @@ public:
 	virtual ~Timestamp(){}
 	virtual DATA_TYPE getType() const {return DT_TIMESTAMP;}
 	virtual DATA_CATEGORY getCategory() const {return TEMPORAL;}
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 	virtual ConstantSP getInstance() const {return ConstantSP(new Timestamp());}
 	virtual ConstantSP getValue() const {return ConstantSP(new Timestamp(val_));}
 	virtual string getString() const { return toString(val_);}
@@ -841,7 +835,6 @@ public:
 	virtual ~NanoTimestamp(){}
 	virtual DATA_TYPE getType() const {return DT_NANOTIMESTAMP;}
 	virtual DATA_CATEGORY getCategory() const {return TEMPORAL;}
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 	virtual ConstantSP getInstance() const {return ConstantSP(new NanoTimestamp());}
 	virtual ConstantSP getValue() const {return ConstantSP(new NanoTimestamp(val_));}
 	virtual string getString() const { return toString(val_);}
@@ -861,7 +854,6 @@ public:
 	virtual void validate();
 	static Minute* parseMinute(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class Second:public TemporalScalar{
@@ -876,7 +868,6 @@ public:
 	virtual void validate();
 	static Second* parseSecond(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class DateTime:public TemporalScalar{
@@ -890,7 +881,6 @@ public:
 	virtual string getString() const { return toString(val_);}
 	static DateTime* parseDateTime(const string& str);
 	static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 class DateHour:public TemporalScalar{
@@ -904,7 +894,6 @@ public:
     virtual string getString() const { return toString(val_);}
     static DateHour* parseDateHour(const string& str);
     static string toString(int val);
-	virtual ConstantSP castTemporal(DATA_TYPE expectType);
 };
 
 };
