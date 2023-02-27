@@ -9,15 +9,27 @@
 #include "ScalarImp.h"
 #include "TableImp.h"
 #include "Util.h"
+#include "Compress.h"
+#include "ConstantImp.h"
 
 namespace dolphindb {
 
-short ConstantMarshallImp::encodeFlag(const ConstantSP& target){
-	short flag = target->getForm() <<8;
-	if(target->isTable())
-		flag += ((Table*)target.get())->getTableType();
-	else
-		flag += (target->isVector() && target->getType() == DT_SYMBOL) ? DT_SYMBOL + 128: target->getType();
+#define DLOG true?DLogger::GetMinLevel() : DLogger::Info
+
+short ConstantMarshallImp::encodeFlag(const ConstantSP& target, bool compress){
+	short flag = target->getForm() << 8;
+	if (compress == false) {
+		if (target->isTable()) {
+			flag += ((Table*)target.get())->getTableType();
+		}else
+			flag += (target->isVector() && target->getType() == DT_SYMBOL) ? DT_SYMBOL + 128 : target->getType();
+	}
+	else {
+		if (target->isTable())
+			flag += COMPRESSTBL;
+		else
+			flag += DT_COMPRESS;
+	}
 	return flag;
 }
 
@@ -30,7 +42,7 @@ void ConstantUnmarshallImp::decodeFlag(short flag, DATA_FORM& form, DATA_TYPE& t
 	type = static_cast<DATA_TYPE>(flag & 0xff);
 }
 
-bool ScalarMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool ScalarMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	if(headerSize > 1024){
 		ret = INVALIDDATA;
 		return false;
@@ -41,6 +53,13 @@ bool ScalarMarshall::start(const char* requestHeader, size_t headerSize, const C
 	short flag = encodeFlag(target);
 	memcpy(buf_ + headerSize, (char*)&flag, 2);
 	headerSize += sizeof(short);
+
+	DATA_CATEGORY category = target->getCategory();
+	if (category == DENARY) {
+		int scale = target->getExtraParamForType();
+		memcpy(buf_ + headerSize, &scale, 4);
+		headerSize += 4;
+	}
 
 	target_.clear();
 	partial_ = 0;
@@ -71,7 +90,7 @@ bool ScalarMarshall::start(const char* requestHeader, size_t headerSize, const C
 		target_.clear();
 		partial_ = 0;
 	}
-
+	
 	complete_ = (ret == OK);
 	return complete_;
 }
@@ -80,11 +99,87 @@ void ScalarMarshall::reset(){
 	target_.clear();
 }
 
-bool VectorMarshall::start(const ConstantSP& target, bool blocking, IO_ERR& ret){
-	return start(0, 0, target, blocking, ret);
+bool VectorMarshall::start(const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
+	return start(0, 0, target, blocking, compress, ret);
 }
 
-bool VectorMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool VectorMarshall::writeMetaValues(BufferWriter<DataOutputStreamSP> &output, const ConstantSP& target, 
+				bool includeMeta, size_t offset, bool blocking, IO_ERR& ret) {
+	target_.clear();
+	marshall_.clear();
+	partial_ = 0;
+	nextStart_ = 0;
+	complete_ = false;
+
+	int rows = target->rows();
+	int cols = target->columns();
+	if (((Vector*)target.get())->getVectorType() == VECTOR_TYPE::ARRAYVECTOR) {
+		//use holder of cols to store the total number of cells of an array vector.
+		cols = ((FastArrayVector*)target.get())->getValueSize();
+	}
+	if (includeMeta) {
+		memcpy(buf_ + offset, (char*)&rows, sizeof(int));
+		offset += sizeof(int);
+		memcpy(buf_ + offset, (char*)&cols, sizeof(int));
+		offset += sizeof(int);
+
+		if (target->getRawType() == DT_DECIMAL32 || target->getRawType() == DT_DECIMAL64) {
+			int scale = target->getExtraParamForType();
+			memcpy(buf_ + offset, &scale, 4);
+			offset += 4;
+		}
+	}
+
+	int numElement = 0;
+	INDEX size = target->size();
+	VectorSP vec = target;
+
+	INDEX actualSize = 0;
+	if (size>0 && vec->getType() != DT_ANY && vec->getType() != DT_SYMBOL) {
+		actualSize = vec->serialize(buf_ + offset, MARSHALL_BUFFER_SIZE - offset, 0, 0, numElement, partial_);
+		if (actualSize < 0) {
+			ret = OTHERERR;
+			return false;
+		}
+		nextStart_ += numElement;
+	}
+	ret = output.start(buf_, actualSize + offset);
+
+	if (ret == OK && size > 0 && vec->getType() == DT_SYMBOL) {
+		if (symbaseMarshall_.isNull())
+			resetSymbolBaseMarshall(true);
+		if (!symbaseMarshall_->start(target->getSymbolBase(), true, ret))
+			return false;
+	}
+	if (!blocking)
+		target_ = vec;
+
+	if (vec->getType() == DT_ANY) {
+		while (ret == OK && nextStart_ < size) {
+			ConstantSP element = vec->get(nextStart_);
+			marshall_ = ConstantMarshallFactory::getInstance(element->getForm(), output.getDataOutputStream());
+			if (marshall_->start(element, blocking, false, ret))
+				++nextStart_;
+		}
+	}
+	else {
+		while (ret == OK && nextStart_ < size) {
+			actualSize = vec->serialize(buf_, MARSHALL_BUFFER_SIZE, nextStart_, partial_, numElement, partial_);
+			if (actualSize < 0) {
+				ret = OTHERERR;
+				return false;
+			}
+			else
+				nextStart_ += numElement;
+			ret = output.start(buf_, actualSize);
+		}
+	}
+
+	complete_ = (ret == OK);
+	return complete_;
+}
+
+bool VectorMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	if(headerSize > 1024){
 		ret = INVALIDDATA;
 		return false;
@@ -92,73 +187,40 @@ bool VectorMarshall::start(const char* requestHeader, size_t headerSize, const C
 	else if(headerSize > 0)
 		memcpy(buf_, requestHeader, headerSize);
 	size_t offset = headerSize;
-
-	target_.clear();
-	marshall_.clear();
-	partial_ = 0;
-	nextStart_ = 0;
-	complete_ = false;
-
-	short flag = encodeFlag(target);
+	short flag;
+	COMPRESS_METHOD type = COMPRESS_METHOD::COMPRESS_NONE;
+	if (compress && target->getType() != DT_SYMBOL) {
+		type = compressMethod_;
+	}
+	flag = encodeFlag(target, type != COMPRESS_METHOD::COMPRESS_NONE);
 	memcpy(buf_ + offset, (char*)&flag, sizeof(short));
 	offset += sizeof(short);
 
-	int rows = target->rows();
-	int cols = target->columns();
-	memcpy(buf_ + offset, (char*)&rows, sizeof(int));
-	offset += sizeof(int);
-	memcpy(buf_ + offset, (char*)&cols, sizeof(int));
-	offset += sizeof(int);
-
-	int numElement =0;
-	INDEX size = target->size();
-	VectorSP vec = target;
-	if(vec->isView())
-		vec = target->getValue();
-
-	INDEX actualSize = 0;
-	if(size>0 && vec->getType() != DT_ANY && vec->getType() != DT_SYMBOL){
-		actualSize = vec->serialize(buf_+offset,MARSHALL_BUFFER_SIZE-offset,0,0,numElement,partial_);
-		if(actualSize < 0){
-			ret = OTHERERR;
-			return false;
-		}
-		nextStart_ += numElement;
+	if(type == COMPRESS_METHOD::COMPRESS_NONE || target->getType() == DT_SYMBOL) {
+		return writeMetaValues(out_, target, true, offset, blocking, ret);
 	}
-	ret =out_.start(buf_,actualSize + offset);
+	//flag
+	out_.start(buf_, offset);
+	offset = 0;
 
-	if(ret == OK && size > 0 && vec->getType() == DT_SYMBOL){
-		if(symbaseMarshall_.isNull())
-			resetSymbolBaseMarshall(true);
-		if(!symbaseMarshall_->start(target->getSymbolBase(), true, ret))
-			return false;
-	}
-	if(!blocking)
-		target_ = vec;
-
-	if(vec->getType() == DT_ANY){
-		while(ret == OK && nextStart_ < size){
-			ConstantSP element = vec->get(nextStart_);
-			marshall_ = ConstantMarshallFactory::getInstance(element->getForm(), out_.getDataOutputStream());
-			if(marshall_->start(element, blocking, ret))
-				++nextStart_;
-		}
-	}
-	else{
-		while(ret == OK && nextStart_ < size){
-			actualSize = vec->serialize(buf_,MARSHALL_BUFFER_SIZE,nextStart_,partial_,numElement,partial_);
-			if(actualSize < 0){
-				ret = OTHERERR;
-				return false;
-			}
-			else
-				nextStart_ += numElement;
-			ret =out_.start(buf_,actualSize);
-		}
-	}
-
-	complete_ = (ret == OK);
-	return complete_;
+	int unitLen = Util::getDataTypeSize(target->getType());
+	CompressionFactory::Header header;
+	header.colCount = 1;
+	header.version = 0;
+	if (Util::isLittleEndian())
+		header.flag = 1;
+	else
+		header.flag = 0;
+	header.charCode = -1;
+	header.compressedType = type;
+	header.dataType = (char)target->getType();
+	header.unitLength = unitLen;
+	header.reserved = target->getExtraParamForType();
+	header.extra = target->getExtraParamForType();
+	header.elementCount = target->rows();
+	header.checkSum = -1;
+	ret = CompressionFactory::encodeContent(target, out_.getDataOutputStream(), header, false);
+	return ret == OK;
 }
 
 void VectorMarshall::reset(){
@@ -194,7 +256,7 @@ bool MatrixMarshall::sendMeta(const char* requestHeader, size_t headerSize, cons
 	return ret==OK;
 }
 
-bool MatrixMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool MatrixMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	target_.clear();
 	rowLabelSent_ = false;
 	columnLabelSent_ = false;
@@ -209,18 +271,18 @@ bool MatrixMarshall::start(const char* requestHeader, size_t headerSize, const C
 	inProgress_ = true;
 
 	if(!target->getRowLabel()->isNull()){
-		if(!vectorMarshall_.start(target->getRowLabel(), blocking, ret))
+		if(!vectorMarshall_.start(target->getRowLabel(), blocking, compress, ret))
 			return false;
 	}
 	rowLabelSent_ = true;
 
 	if(!target->getColumnLabel()->isNull()){
-		if(!vectorMarshall_.start(target->getColumnLabel(), blocking, ret))
+		if(!vectorMarshall_.start(target->getColumnLabel(), blocking, compress, ret))
 			return false;
 	}
 	columnLabelSent_ = true;
 
-	vectorMarshall_.start(target, blocking, ret);
+	vectorMarshall_.start(target, blocking, compress, ret);
 	complete_ = (ret == OK);
 	return complete_;
 }
@@ -231,7 +293,7 @@ void MatrixMarshall::reset(){
 	vectorMarshall_.reset();
 }
 
-bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret) {
 	if(headerSize > 1024){
 		ret = INVALIDDATA;
 		return false;
@@ -239,7 +301,7 @@ bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const
 	else if(headerSize > 0)
 		memcpy(buf_, requestHeader, headerSize);
 
-	short flag = encodeFlag(target);
+	short flag = encodeFlag(target, compress);
 	memcpy(buf_ + headerSize, (char*)&flag,sizeof(short));
 	headerSize += sizeof(short);
 
@@ -267,10 +329,20 @@ bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const
 			++columnNamesSent_;
 		}
 		else{
-			ret = out_.start(buf_, headerSize);
-			if(ret != OK)
-				return false;
-			headerSize = 0;
+			size_t totalLen = headerSize + strLen;
+			int nameIndex = 0;
+			while(totalLen > 0){	
+				int nameLen = std::min(MARSHALL_BUFFER_SIZE - headerSize, totalLen);
+				memcpy(buf_ + headerSize, name.c_str() + nameIndex, nameLen);
+				headerSize += nameLen;
+				ret = out_.start(buf_, headerSize);
+				if(ret != OK)
+					return false;
+				totalLen -= headerSize;
+				headerSize = 0;
+				nameIndex += nameLen;
+			}
+			++columnNamesSent_;
 		}
 	}
 
@@ -282,7 +354,7 @@ bool TableMarshall::sendMeta(const char* requestHeader, size_t headerSize, const
 		return true;
 }
 
-bool TableMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool TableMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	target_.clear();
 	columnNamesSent_ = 0;
 	nextColumn_ = 0;
@@ -292,12 +364,20 @@ bool TableMarshall::start(const char* requestHeader, size_t headerSize, const Co
 	TableSP table(target);
 	if(!blocking)
 		target_ = table;
-	if(!sendMeta(requestHeader, headerSize, table, blocking, ret))
+	if(!sendMeta(requestHeader, headerSize, table, blocking, compress, ret))
 		return false;
 
 	ret = OK;
+	COMPRESS_METHOD compressMethod;
 	while(nextColumn_ < table->columns() && ret==OK){
-		vectorMarshall_.start(table->getColumn(nextColumn_), blocking, ret);
+		if (compress) {
+			compressMethod = table->getColumnCompressMethod(nextColumn_);
+		}
+		else {
+			compressMethod = COMPRESS_METHOD::COMPRESS_NONE;
+		}
+		vectorMarshall_.setCompressMethod(compressMethod);
+		vectorMarshall_.start(table->getColumn(nextColumn_), blocking, compress, ret);
 		if(ret == OK)
 			nextColumn_++;
 		else
@@ -327,7 +407,7 @@ bool SetMarshall::sendMeta(const char* requestHeader, size_t headerSize, const C
 	return (ret = out_.start(buf_, headerSize)) == OK;
 }
 
-bool SetMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool SetMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	target_.clear();
 	complete_ = false;
 
@@ -337,7 +417,7 @@ bool SetMarshall::start(const char* requestHeader, size_t headerSize, const Cons
 		return false;
 
 	ConstantSP keys = ((Set*)target.get())->keys();
-	vectorMarshall_.start(keys, blocking, ret);
+	vectorMarshall_.start(keys, blocking, compress, ret);
 	complete_ = (ret == OK);
 	return complete_;
 }
@@ -361,7 +441,7 @@ bool DictionaryMarshall::sendMeta(const char* requestHeader, size_t headerSize, 
 	return (ret = out_.start(buf_, headerSize)) == OK;
 }
 
-bool DictionaryMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool DictionaryMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	target_.clear();
 	keySent_ = false;
 	inProgress_ = false;
@@ -374,12 +454,12 @@ bool DictionaryMarshall::start(const char* requestHeader, size_t headerSize, con
 
 	inProgress_ = true;
 	ConstantSP keys = ((Dictionary*)target.get())->keys();
-	if(!vectorMarshall_.start(keys, blocking, ret))
+	if(!vectorMarshall_.start(keys, blocking, compress, ret))
 		return false;
 
 	keySent_ = true;
 	ConstantSP values = ((Dictionary*)target.get())->values();
-	vectorMarshall_.start(values, blocking, ret);
+	vectorMarshall_.start(values, blocking, compress, ret);
 	complete_ = (ret == OK);
 	return complete_;
 }
@@ -389,7 +469,7 @@ void DictionaryMarshall::reset(){
 	vectorMarshall_.reset();
 }
 
-bool ChunkMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, IO_ERR& ret){
+bool ChunkMarshall::start(const char* requestHeader, size_t headerSize, const ConstantSP& target, bool blocking, bool compress, IO_ERR& ret){
 	if(headerSize > 1024){
 		ret = INVALIDDATA;
 		return false;
@@ -398,18 +478,37 @@ bool ChunkMarshall::start(const char* requestHeader, size_t headerSize, const Co
 	complete_ = false;
 	DFSChunkMeta* chunk = (DFSChunkMeta*)target.get();
 	Buffer buffer(buf_, headerSize + 256);
-	if(headerSize > 0)
-		buffer.write(requestHeader, headerSize);
+	if (headerSize > 0) {
+		ret = buffer.write(requestHeader, headerSize);
+		if (ret != OK)
+			return false;
+	}
 	short flag = encodeFlag(target);
-	buffer.write(flag);
-	buffer.write((short)0); //size of the following data. will change this part later
-	buffer.write(chunk->getPath());
-	buffer.write((const char*)chunk->getId().bytes(),16);
-	buffer.write(chunk->getVersion());
-	buffer.write(chunk->size());
-	buffer.write((char)chunk->getChunkType());
+	ret = buffer.write(flag);
+	if (ret != OK)
+		return false;
+	ret = buffer.write((short)0); //size of the following data. will change this part later
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->getPath());
+	if (ret != OK)
+		return false;
+	ret = buffer.write((const char*)chunk->getId().bytes(),16);
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->getVersion());
+	if (ret != OK)
+		return false;
+	ret = buffer.write(chunk->size());
+	if (ret != OK)
+		return false;
+	ret = buffer.write((char)chunk->getChunkType());
+	if (ret != OK)
+		return false;
 	int copyCount = chunk->getCopyCount();
-	buffer.write((char)chunk->getCopyCount());
+	ret = buffer.write((char)chunk->getCopyCount());
+	if (ret != OK)
+		return false;
 	for(int i=0; i<copyCount; ++i){
 		ret = buffer.write(chunk->getCopySite(i));
 		if(ret != OK)
@@ -421,8 +520,8 @@ bool ChunkMarshall::start(const char* requestHeader, size_t headerSize, const Co
 
 	//set bytearray size
 	int count = buffer.size();
-	short byteArraySize = count - 4;
-	memcpy(buf_ + 2, &byteArraySize, 2);
+	short byteArraySize = count - 4 - headerSize;
+	memcpy(buf_ + headerSize + 2, &byteArraySize, 2);
 
 	complete_ = ((ret = out_.start(buf_, count)) == OK);
 	return complete_;
@@ -490,7 +589,21 @@ bool ScalarUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 	}
 	else{
 		isCodeObject_ = false;
-		obj_ = Util::createConstant(type);
+		if (Util::getCategory(type) == DENARY) {
+			scale_ = -1;
+			ret = in_->readInt(scale_);
+			if (ret != OK) {
+				return false;
+			}
+			if (scale_ < 0) {
+				ret = INVALIDDATA;
+				return false;
+			}
+			obj_ = Util::createConstant(type, scale_);
+		}
+		else {
+			obj_ = Util::createConstant(type);
+		}
 		if(obj_.isNull()){
 			ret = INVALIDDATA;
 			return false;
@@ -532,39 +645,57 @@ void SymbolBaseUnmarshall::reset(){
 	dict_.clear();
 }
 
-void VectorUnmarshall::resetSymbolBaseUnmarshall(bool createIfNotExist){
+void VectorUnmarshall::resetSymbolBaseUnmarshall(DataInputStreamSP in, bool createIfNotExist){
 	if(!symbaseUnmarshall_.isNull()){
 		symbaseUnmarshall_->reset();
 	}
 	else if(createIfNotExist){
-		symbaseUnmarshall_ = new SymbolBaseUnmarshall(in_);
+		symbaseUnmarshall_ = new SymbolBaseUnmarshall(in);
 	}
 }
 
 bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 	flag_ = flag;
+	DATA_FORM form;
+	DATA_TYPE type;
+	decodeFlag(flag, form, type);
+	
+	DataQueueSP queue = new BlockingQueue<DataBlock>(1024);
+	DataInputStreamSP input = in_;
+	DataOutputStreamSP decompressOutput = new DataOutputStream(queue);
+	ThreadSP decodeThread;
+	CompressionFactory::Header compressHeader;
+	int valueSize = -1;
+	if (type == DT_COMPRESS) {
+		input->read((char*)&compressHeader, sizeof(compressHeader));
+		decodeThread = new Thread(new Executor([&](){
+			CompressionFactory::decode(in_, decompressOutput, compressHeader);
+		}));
+		decodeThread->start();
+		input = new DataInputStream(queue);
+		type = (DATA_TYPE)compressHeader.dataType;
+		valueSize = compressHeader.extra;
+	}
+	//If fllowing part modified, remember to modify Compress.writeVectorMetaValue function
 	rows_ = -1;
 	columns_ = -1;
-	if((ret = in_->readInt(rows_)) != OK)
+	if((ret = input->readInt(rows_)) != OK)
 		return false;
 	else if(rows_ < 0){
 		ret = INVALIDDATA;
 		return false;
 	}
-	if((ret = in_->readInt(columns_)) != OK)
+	if((ret = input->readInt(columns_)) != OK)
 		return false;
 	else if(columns_ < 0){
 		ret = INVALIDDATA;
 		return false;
 	}
-	DATA_FORM form;
-	DATA_TYPE type;
-	decodeFlag(flag, form, type);
 	DATA_TYPE actualType = type;
 	SymbolBaseSP sym;
 	if(actualType == 128 + DT_SYMBOL){
 		if(symbaseUnmarshall_.isNull())
-			resetSymbolBaseUnmarshall(true);
+			resetSymbolBaseUnmarshall(input, true);
 		if(!symbaseUnmarshall_->start(blocking, ret))
 			return false;
 		sym = symbaseUnmarshall_->getSymbolBase();
@@ -572,15 +703,31 @@ bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 	else if(actualType == DT_SYMBOL){
 		actualType = DT_STRING;
 	}
+	if (Util::getCategory(actualType) == DENARY || actualType == DT_DECIMAL32_ARRAY || actualType == DT_DECIMAL64_ARRAY) {
+		ret = input->readInt(scale_);
+		if (ret != OK) {
+			return false;
+		}
+		if (scale_ < 0) {
+			ret = INVALIDDATA;
+			return false;
+		}
+	}
+	//If above part modified, remember to modify Compress.writeVectorMetaValue function
 	if(form == DF_PAIR)
-		obj_ = Util::createPair(actualType);
+		obj_ = Util::createPair(actualType, scale_);
 	else if(form == DF_VECTOR){
 		if (actualType == 128 + DT_SYMBOL)
 			obj_ = Util::createSymbolVector(sym, rows_);
 		else if (actualType <= 64)
-			obj_ = Util::createVector(actualType, rows_);
-		else 
-			obj_ = Util::createArrayVector(actualType, rows_);
+			obj_ = Util::createVector(actualType, rows_, rows_, true, scale_);
+		else {
+			obj_ = Util::createArrayVector(actualType, rows_, rows_, true, scale_);
+			if(valueSize > 0)
+				((FastArrayVector*)obj_.get())->reserveValue(compressHeader.extra);
+			else if(columns_ > 0)
+				((FastArrayVector*)obj_.get())->reserveValue(columns_);
+		}
 	}
 	else if(form == DF_MATRIX)
 		obj_ = Util::createMatrix(actualType, columns_, rows_, columns_);
@@ -601,10 +748,10 @@ bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 		if(!unmarshall_.isNull())
 			unmarshall_.clear();
 		while(ret == OK && nextStart_ < rows_){
-			ret = in_->readShort(flag);
+			ret = input->readShort(flag);
 			if(ret == OK){
 				decodeFlag(flag, form, type);
-				unmarshall_ = ConstantUnmarshallFactory::getInstance(form, in_);
+				unmarshall_ = ConstantUnmarshallFactory::getInstance(form, input);
 				if(unmarshall_.isNull()){
 					ret = INVALIDDATA;
 				}
@@ -620,9 +767,27 @@ bool VectorUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 		}
 	}
 	else{
+#if 0
 		INDEX numElements = 0;
-		ret = obj_->deserialize(in_.get(), 0, obj_->size(), numElements);
+		ret = obj_->deserialize(input.get(), 0, obj_->size(), numElements);
 		nextStart_ = numElements;
+#else
+		INDEX numElements = 0;
+		INDEX leftSize = obj_->size() - nextStart_;
+		while(leftSize > 0){
+			ret = obj_->deserialize(input.get(), nextStart_, std::min(leftSize, 8192), numElements);
+			if(ret != OK)
+				return false;
+			leftSize -= numElements;
+			nextStart_ += numElements;
+			if ((bool)notify_) {
+				notify_(obj_, nextStart_);
+			}
+		}
+#endif
+	}
+	if(!decodeThread.isNull()){
+		decodeThread->join();
 	}
 	return ret == OK;
 }
@@ -760,7 +925,7 @@ void TableUnmarshall::reset(){
 	colNames_.clear();
 	colObjs_.clear();
 	vectorUnmarshall_.reset();
-	vectorUnmarshall_.resetSymbolBaseUnmarshall(false);
+	vectorUnmarshall_.resetSymbolBaseUnmarshall(in_, false);
 }
 
 bool SetUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
@@ -842,12 +1007,12 @@ bool ChunkUnmarshall::start(short flag, bool blocking, IO_ERR& ret){
 		return false;
 	}
 
-	vector<char> buf;
+	vector<char> buf(size_);
 	ret = in_->read(buf.data(), size_);
 	if(ret != OK)
 		return ret;
 
-	return parsing(buf.data());
+	return parsing(buf.data()) == OK;
 }
 
 IO_ERR  ChunkUnmarshall::parsing(const char* buf){

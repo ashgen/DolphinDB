@@ -263,8 +263,7 @@ IO_ERR String::deserialize(DataInputStream* in, INDEX indexStart, INDEX targetNu
         val_.clear();
         val_.append(buf.get(), len);
     } else {
-        // numElement < 0 indicate read line from input stream
-        ret = numElement >= 0 ? in->readString(val_) : in->readLine(val_);
+        ret = in->readString(val_);
         if (ret == OK)
             numElement = 1;
     }
@@ -519,8 +518,19 @@ Int128* Int128::parseInt128(const char* str, int len){
 		return nullptr;
 }
 
+bool Int128::parseInt128(const char* str, int len, unsigned char *buf) {
+	if (len == 0) {
+		memset(buf, 0, 16);
+		return true;
+	}
+	else if (len == 32 && Util::fromHex(str, len, Util::LITTLE_ENDIAN_ORDER, buf))
+		return true;
+	else
+		return false;
+}
+
 int Int128::compare(INDEX index, const ConstantSP& target) const {
-	return ((Guid*)uuid_)->compare(target->getInt128());
+	return guid_.compare(target->getInt128());
 }
 
 Uuid::Uuid(bool newUuid){
@@ -1060,7 +1070,8 @@ Time* Time::parseTime(const string& str){
 		p->setNull();
 		return p;
 	}
-
+	else if(str.size() != 12)
+		return p;
 	int hour,minute,second,milliSecond=0;
 	hour=atoi(str.substr(0,2).c_str());
 	if(hour>=24 || str[2]!=':')
@@ -1194,6 +1205,10 @@ Timestamp* Timestamp::parseTimestamp(const string& str){
 		return p;
 	}
 
+	int len = str.size();
+	if(len < 19)
+		return p;
+
 	int year,month,day,hour,minute,second,millisecond=0;
 	year=atoi(str.substr(0,4).c_str());
 	if(year==0 ||str[4]!='.')
@@ -1214,8 +1229,12 @@ Timestamp* Timestamp::parseTimestamp(const string& str){
 	second=atoi(str.substr(17,2).c_str());
 	if(second>=60)
 		return p;
-	if(str[19]=='.')
-		millisecond=atoi(str.substr(20,str.length()-20).c_str());
+	if(len > 19 && str[19]=='.'){
+		if(len > 22)
+			millisecond=atoi(str.substr(20, 3).c_str());
+		else
+			return p;
+	}
 	p=new Timestamp(year,month,day,hour,minute,second,millisecond);
 	return p;
 }
@@ -1304,5 +1323,388 @@ DateHour* DateHour::parseDateHour(const string& str){
     return p;
 }
 
+ConstantSP Date::castTemporal(DATA_TYPE expectType) {
+	if (expectType != DT_DATEHOUR && (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP)) {
+		throw RuntimeException("castTemporal from DATE to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType != DT_DATE && expectType != DT_TIMESTAMP && expectType != DT_NANOTIMESTAMP && expectType != DT_MONTH && expectType != DT_DATETIME && expectType != DT_DATEHOUR) {
+		throw RuntimeException("castTemporal from DATE to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_DATE)
+		return getValue();
+
+	if (expectType == DT_DATEHOUR) {
+		int result;
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * 24;
+		return Util::createObject(expectType, result);
+	}
+	long long ratio = Util::getTemporalConversionRatio(DT_DATE, expectType);
+	if (expectType == DT_NANOTIMESTAMP || expectType == DT_TIMESTAMP) {
+		long long result;
+
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATETIME) {
+		int result;
+
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		int result;
+
+		if (val_ == INT_MIN) {
+			result = INT_MIN;
+		}
+		else {
+			int year, month, day;
+			Util::parseDate(val_, year, month, day);
+			result = year * 12 + month - 1;
+		}
+		return Util::createObject(expectType, result);
+	}
+}
+ConstantSP DateHour::castTemporal(DATA_TYPE expectType) {
+	if (expectType != DT_DATEHOUR && (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP)) {
+		throw RuntimeException("castTemporal from DATEHOUR to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_DATEHOUR)
+		return getValue();
+
+	long long ratio = Util::getTemporalConversionRatio(DT_DATETIME, expectType);
+	if (expectType == DT_NANOTIMESTAMP || expectType == DT_TIMESTAMP) {
+		long long result;
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * ratio * 3600;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATETIME) {
+		int result;
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * 3600;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATE) {
+		int result;
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * 3600 / (-ratio);
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_MONTH) {
+		int result;
+		if (val_ == INT_MIN) {
+			result = INT_MIN;
+		}
+		else {
+			int year, month, day;
+			Util::parseDate(val_ * 3600 / 86400, year, month, day);
+			result = year * 12 + month - 1;
+		}
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_NANOTIME) {
+		long long result;
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * 3600 % 86400 * 1000000000LL;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		ratio = Util::getTemporalConversionRatio(DT_SECOND, expectType);
+		int result;
+		if (ratio > 0) {
+			val_ == INT_MIN ? result = INT_MIN : result = val_ * 3600 % 86400 * ratio;
+		}
+		else {
+			val_ == INT_MIN ? result = INT_MIN : result = val_ * 3600 % 86400 / (-ratio);
+		}
+		return Util::createObject(expectType, result);
+	}
+}
+
+ConstantSP DateTime::castTemporal(DATA_TYPE expectType) {
+	if (expectType != DT_DATEHOUR && (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP)) {
+		throw RuntimeException("castTemporal from DATETIME to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_DATETIME)
+		return getValue();
+
+	if (expectType == DT_DATEHOUR) {
+		int result;
+
+		int tail = (val_ < 0) && (val_ % 3600);
+		val_ == INT_MIN ? result = INT_MIN : result = val_ / 3600 - tail;
+		return Util::createObject(expectType, result);
+	}
+	long long ratio = Util::getTemporalConversionRatio(DT_DATETIME, expectType);
+	if (expectType == DT_NANOTIMESTAMP || expectType == DT_TIMESTAMP) {
+		long long result;
+
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATE) {
+		int result;
+		ratio = -ratio;
+
+		int tail = (val_ < 0) && (val_ % ratio);
+		val_ == INT_MIN ? result = INT_MIN : result = val_ / ratio - tail;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_MONTH) {
+		int result;
+
+		if (val_ == INT_MIN) {
+			result = INT_MIN;
+		}
+		else {
+			int year, month, day;
+			Util::parseDate(val_ / 86400, year, month, day);
+			result = year * 12 + month - 1;
+		}
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_NANOTIME) {
+		long long result;
+
+		int remainder = val_ % 86400;
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)(remainder + ((val_ < 0) && remainder) * 86400) * 1000000000LL;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		ratio = Util::getTemporalConversionRatio(DT_SECOND, expectType);
+		int result;
+		if (ratio > 0) {
+			int remainder = val_ % 86400;
+			val_ == INT_MIN ? result = INT_MIN : result = (remainder + ((val_ < 0) && remainder) * 86400) * ratio;
+		}
+		else {
+			ratio = -ratio;
+			int remainder = val_ % 86400;
+			val_ == INT_MIN ? result = INT_MIN : result = (remainder + ((val_ < 0) && remainder) * 86400) / ratio;
+		}
+		return Util::createObject(expectType, result);
+	}
+}
+
+ConstantSP Minute::castTemporal(DATA_TYPE expectType) {
+	if (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP) {
+		throw RuntimeException("castTemporal from MINUTE to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType != DT_TIME && expectType != DT_NANOTIME && expectType != DT_SECOND && expectType != DT_MINUTE) {
+		throw RuntimeException("castTemporal from MINUTE to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_MINUTE)
+		return getValue();
+
+	long long ratio = Util::getTemporalConversionRatio(DT_MINUTE, expectType);
+	if (expectType == DT_NANOTIME) {
+		long long result;
+
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		int result;
+
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+}
+
+ConstantSP Month::castTemporal(DATA_TYPE expectType) {
+	if (expectType == DT_MONTH)
+		return getValue();
+	else
+		throw RuntimeException("castTemporal from MONTH to " + Util::getDataTypeString(expectType) + " not supported ");
+}
+
+ConstantSP Second::castTemporal(DATA_TYPE expectType) {
+	if (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP) {
+		throw RuntimeException("castTemporal from SECOND to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType != DT_TIME && expectType != DT_NANOTIME && expectType != DT_SECOND && expectType != DT_MINUTE) {
+		throw RuntimeException("castTemporal from SECOND to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_SECOND)
+		return getValue();
+
+	long long ratio = Util::getTemporalConversionRatio(DT_SECOND, expectType);
+	if (expectType == DT_NANOTIME) {
+		long long result;
+
+		val_ == INT_MIN ? result = LLONG_MIN : result = val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_TIME) {
+		int result;
+
+		val_ == INT_MIN ? result = INT_MIN : result = val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		int result;
+
+		val_ == INT_MIN ? result = INT_MIN : result = val_ / (-ratio);
+		return Util::createObject(expectType, result);
+	}
+}
+ConstantSP Time::castTemporal(DATA_TYPE expectType) {
+	if (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP) {
+		throw RuntimeException("castTemporal from TIME to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType != DT_TIME && expectType != DT_NANOTIME && expectType != DT_SECOND && expectType != DT_MINUTE) {
+		throw RuntimeException("castTemporal from TIME to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_TIME)
+		return getValue();
+
+	long long ratio = Util::getTemporalConversionRatio(DT_TIME, expectType);
+	if (expectType == DT_NANOTIME) {
+		long long result;
+
+		val_ == INT_MIN ? result = LLONG_MIN : result = (long long)val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		int result;
+
+		val_ == INT_MIN ? result = INT_MIN : result = val_ / (-ratio);
+		return Util::createObject(expectType, result);
+	}
+}
+
+ConstantSP NanoTime::castTemporal(DATA_TYPE expectType) {
+	if (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP) {
+		throw RuntimeException("castTemporal from NANOTIME to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType != DT_TIME && expectType != DT_NANOTIME && expectType != DT_SECOND && expectType != DT_MINUTE) {
+		throw RuntimeException("castTemporal from NANOTIME to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_NANOTIME)
+		return getValue();
+
+	long long ratio = Util::getTemporalConversionRatio(DT_NANOTIME, expectType);
+
+	int result;
+	val_ == LLONG_MIN ? result = INT_MIN : result = val_ / (-ratio);
+	return Util::createObject(expectType, result);
+}
+
+ConstantSP Timestamp::castTemporal(DATA_TYPE expectType) {
+	if (expectType != DT_DATEHOUR && (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP)) {
+		throw RuntimeException("castTemporal from TIMESTAMP to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_TIMESTAMP)
+		return getValue();
+
+	if (expectType == DT_DATEHOUR) {
+		int result;
+
+		int tail = (val_ < 0) && (val_ % 3600000);
+		val_ == LLONG_MIN ? result = INT_MIN : result = val_ / 3600000LL - tail;
+		return Util::createObject(expectType, result);
+	}
+	long long ratio = Util::getTemporalConversionRatio(DT_TIMESTAMP, expectType);
+	if (expectType == DT_NANOTIMESTAMP) {
+		long long result;
+
+		val_ == LLONG_MIN ? result = LLONG_MIN : result = val_ * ratio;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATE || expectType == DT_DATETIME) {
+		int result;
+		ratio = -ratio;
+
+		int tail = (val_ < 0) && (val_ % ratio);
+		val_ == LLONG_MIN ? result = INT_MIN : result = val_ / ratio - tail;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_MONTH) {
+		int result;
+
+		if (val_ == LLONG_MIN) {
+			result = INT_MIN;
+		}
+		else {
+			int year, month, day;
+			Util::parseDate(val_ / 86400000, year, month, day);
+			result = year * 12 + month - 1;
+		}
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_NANOTIME) {
+		long long result;
+
+		int remainder = val_ % 86400000;
+		val_ == LLONG_MIN ? result = LLONG_MIN : result = (remainder + ((val_ < 0) && remainder) * 86400000) * 1000000ll;
+		return Util::createObject(expectType, result);
+	}
+	else {
+		ratio = Util::getTemporalConversionRatio(DT_TIME, expectType);
+		int result;
+		if (ratio < 0) ratio = -ratio;
+
+		int remainder = val_ % 86400000;
+		val_ == LLONG_MIN ? result = INT_MIN : result = (remainder + ((val_ < 0) && remainder) * 86400000) / ratio;
+		return Util::createObject(expectType, result);
+	}
+}
+
+ConstantSP NanoTimestamp::castTemporal(DATA_TYPE expectType) {
+	if (expectType != DT_DATEHOUR && (expectType < DT_DATE || expectType > DT_NANOTIMESTAMP)) {
+		throw RuntimeException("castTemporal from NANOTIMESTAMP to " + Util::getDataTypeString(expectType) + " not supported ");
+	}
+	if (expectType == DT_NANOTIMESTAMP)
+		return getValue();
+
+	if (expectType == DT_DATEHOUR) {
+		int result;
+
+		int tail = (val_ < 0) && (val_ % 3600000000000ll);
+		val_ == LLONG_MIN ? result = INT_MIN : result = val_ / 3600000000000ll - tail;
+		return Util::createObject(expectType, result);
+	}
+	long long ratio = -Util::getTemporalConversionRatio(DT_NANOTIMESTAMP, expectType);
+	if (expectType == DT_TIMESTAMP) {
+		long long result;
+
+		int tail = (val_ < 0) && (val_ % ratio);
+		val_ == LLONG_MIN ? result = LLONG_MIN : result = val_ / ratio - tail;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_DATE || expectType == DT_DATETIME) {
+		int result;
+
+		int tail = (val_ < 0) && (val_ % ratio);
+		val_ == LLONG_MIN ? result = INT_MIN : result = val_ / ratio - tail;
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_MONTH) {
+		int result;
+
+		if (val_ == LLONG_MIN) {
+			result = INT_MIN;
+		}
+		else {
+			int year, month, day;
+			Util::parseDate(val_ / 86400000000000ll, year, month, day);
+			result = year * 12 + month - 1;
+		}
+		return Util::createObject(expectType, result);
+	}
+	else if (expectType == DT_NANOTIME) {
+		long long result;
+
+		long long remainder = val_ % 86400000000000ll;
+		val_ == LLONG_MIN ? result = LLONG_MIN : result = (remainder + (val_ < 0 && remainder) * 86400000000000ll);
+		return Util::createObject(expectType, result);
+	}
+	else {
+		ratio = Util::getTemporalConversionRatio(DT_NANOTIME, expectType);
+		int result;
+		ratio = -ratio;
+
+		long long remainder = val_ % 86400000000000ll;
+		val_ == LLONG_MIN ? result = INT_MIN : result = (remainder + (val_ < 0 && remainder) * 86400000000000ll) / ratio;
+		return Util::createObject(expectType, result);
+	}
+}
 
 };

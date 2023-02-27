@@ -15,7 +15,7 @@ namespace dolphindb {
 const string TemporalFormat::pmString = "PM";
 const string TemporalFormat::amString = "AM";
 const char* TemporalFormat::monthName[12] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
-const vector<pair<int, int> > TemporalFormat::formatMap = std::move(TemporalFormat::initFormatMap());
+vector<pair<int, int> > TemporalFormat::formatMap;
 const long long NumberFormat::power10_[10] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000ll, 10000000000ll};
 const double NumberFormat::enableScientificNotationBeyond_ = 1.0e+15;
 const double NumberFormat::epsilon_ = 1.0e-12;
@@ -357,6 +357,8 @@ TemporalFormat::TemporalFormat(const string& format) : quickFormat_(false), segm
 }
 
 void TemporalFormat::initialize(const string& format) {
+	if(formatMap.empty())
+		formatMap = std::move(TemporalFormat::initFormatMap());
 	int len = format.length();
 	if(len == 0)
 		throw RuntimeException("The format string can't be empty.");
@@ -473,16 +475,25 @@ string TemporalFormat::format(long long nowtime, DATA_TYPE dtype) const{
 			break;
 		}
 		case DT_DATEHOUR: {
-            int tmp = nowtime / 24;
-            timeNumber[4] = nowtime % 24;
-            Util::parseDate(tmp, timeNumber[0], timeNumber[1], timeNumber[2]);
-            timeNumber[5] = timeNumber[4] / 12;
-            timeNumber[3] = timeNumber[4] % 12;
+			int tmp = nowtime / 24;
+			nowtime = nowtime % 24;
+			if(nowtime < 0){
+				--tmp;
+				nowtime += 24;
+			}
+			Util::parseDate(tmp, timeNumber[0], timeNumber[1], timeNumber[2]);
+			timeNumber[4] = nowtime;
+			timeNumber[5] = timeNumber[4] / 12;
+			timeNumber[3] = timeNumber[4] % 12;
             break;
 		}
 		case DT_TIMESTAMP: {
 			int tmp = nowtime / 86400000ll;
 			nowtime = nowtime % 86400000ll;
+			if(nowtime < 0){
+				--tmp;
+				nowtime += 86400000ll;
+			}
 			Util::parseDate(tmp, timeNumber[0], timeNumber[1], timeNumber[2]);
 			timeNumber[8] = nowtime % 1000;
 			nowtime = nowtime / 1000;

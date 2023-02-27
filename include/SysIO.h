@@ -8,18 +8,20 @@
 #ifndef SYSIO_H_
 #define SYSIO_H_
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <iostream>
 #include <string>
 
 #include "SmartPointer.h"
 #include "Types.h"
+#include "Concurrent.h"
 
 #define MAX_CAPACITY 65536
 #define MAX_PACKET_SIZE 1400
 
-#ifdef LINUX
+#ifdef WINDOWS
+	#include <winsock2.h>
+	#include <windows.h>
+#else
 	#include <netinet/in.h>
     #include <netinet/tcp.h>
     #include <sys/socket.h>
@@ -27,11 +29,19 @@
 	#define INVALID_SOCKET -1
 	#define SOCKET_ERROR   -1
 #endif
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
 #ifdef _MSC_VER
-#define EXPORT_DECL _declspec(dllexport)
+	#ifdef _DDBAPIDLL	
+		#define EXPORT_DECL _declspec(dllexport)
+	#else
+		#define EXPORT_DECL __declspec(dllimport)
+	#endif
 #else
-#define EXPORT_DECL 
-#endif 
+	#define EXPORT_DECL 
+#endif
 
 using std::string;
 
@@ -43,11 +53,13 @@ class UdpSocket;
 class DataInputStream;
 class DataOutputStream;
 class DataStream;
+class DataBlock;
 typedef SmartPointer<Socket> SocketSP;
 typedef SmartPointer<UdpSocket> UdpSocketSP;
 typedef SmartPointer<DataInputStream> DataInputStreamSP;
 typedef SmartPointer<DataOutputStream> DataOutputStreamSP;
 typedef SmartPointer<DataStream> DataStreamSP;
+typedef SmartPointer<BlockingQueue<DataBlock>> DataQueueSP;
 
 class EXPORT_DECL Socket{
 public:
@@ -70,10 +82,15 @@ public:
 	bool isBlockingMode() const {return blocking_;}
 	bool isValid();
 	void setAutoClose(bool option) { autoClose_ = option;}
+	static void enableTcpNoDelay(bool enable);
 	static bool ENABLE_TCP_NODELAY;
+	bool skipAll();
 
 private:
+	void getTimeout(int &timeoutMs);
+	void setTimeout(int timeoutMs);
 	bool setNonBlocking();
+	bool setBlocking();
 	bool setTcpNoDelay();
 	int getErrorCode();
 
@@ -115,12 +132,24 @@ private:
 	struct sockaddr_in addrRemote_;
 };
 
+struct DataBlock{
+public:
+	DataBlock() : buf_(nullptr), length_(0){}
+	DataBlock(char* buf, size_t length) : buf_(buf), length_(length){}
+	char* getDataBuf() const {return buf_;}
+	size_t getDataLength() const {return length_;}
+private:
+	char* buf_;
+	size_t length_;
+};
+
 class EXPORT_DECL DataInputStream{
 public:
 	DataInputStream(STREAM_TYPE type, int bufSize = 2048);
 	DataInputStream(const char* data, int size, bool copy = true);
 	DataInputStream(const SocketSP& socket, int bufSize = 2048);
 	DataInputStream(FILE* file, int bufSize = 2048);
+	DataInputStream(DataQueueSP dataQueue);
 	virtual ~DataInputStream();
 	IO_ERR close();
 	void enableReverseIntegerByteOrder() { reverseOrder_ = true;}
@@ -187,7 +216,6 @@ public:
 	 * Reset the size of an external buffer. The cursor moves to the beginning of the buffer.
 	 */
 	bool reset(int size);
-
 protected:
 	/**
 	 * Read up to number of bytes specified by the length. If the underlying device doesn't have even one byte
@@ -201,7 +229,10 @@ protected:
 private:
 	IO_ERR prepareBytes(size_t length);
 	IO_ERR prepareBytesEndWith(char endChar, size_t& endPos);
-
+	//use in QUEUE_STREAM, if there is already data to read, return immediately, or block util data ready
+	IO_ERR prepareData();
+	//use in QUEUE_STREAM, if there is a #endChar in buf_, record #endPos and return true, or return false
+	bool   isHaveBytesEndWith(char endChar, size_t& endPos);
 protected:
 	SocketSP socket_;
 	FILE* file_;
@@ -213,6 +244,7 @@ protected:
 	size_t capacity_;
 	size_t size_;
 	size_t cursor_;
+	DataQueueSP dataQueue_;
 };
 
 class EXPORT_DECL DataOutputStream {
@@ -221,6 +253,7 @@ public:
 	DataOutputStream(FILE* file, bool autoClose = false);
 	DataOutputStream(size_t capacity = 1024) ;
 	DataOutputStream(STREAM_TYPE source) ;
+	DataOutputStream(DataQueueSP dataQueue);
 	virtual ~DataOutputStream();
 	IO_ERR write(const char* buffer, size_t length, size_t& actualWritten);
 	IO_ERR write(const char* buffer, size_t length);
@@ -257,6 +290,7 @@ protected:
 	size_t capacity_;
 	size_t size_;
 	bool autoClose_;
+	DataQueueSP dataQueue_;
 };
 
 class EXPORT_DECL Buffer {
@@ -352,9 +386,7 @@ public:
 	void isWritable(bool option);
 	IO_ERR clearReadBuffer();
 	IO_ERR write(const char* buf, int length, int& sent);
-	IO_ERR write(Constant* obj, INDEX offset, INDEX length, INDEX& sent);
 	IO_ERR writeLine(const char* obj, const char* newline);
-	IO_ERR writeLine(Constant* obj, INDEX offset, INDEX length, const char* newline, INDEX& sent);
 	IO_ERR seek(long long offset, int mode, long long& newPosition);
 	string getDescription() const;
 
