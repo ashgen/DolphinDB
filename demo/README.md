@@ -3,7 +3,7 @@
 步骤如下：
 
 1. 解压*demo.zip*到*src*目录下。
-2. 将编译好的 C++ API 动态库拷贝到 *demo/lib* 目录下
+2. 拷贝编译好的 C++ API 动态库至 *demo/lib* 目录下。
 3. 执行下面的命令完成编译。以 Visual Studio 2022 为例，编译脚本中应使用 `SSL_LIBS` 参数指定 openssl 库的路径。
 ```
 cd api-cplusplus/demo
