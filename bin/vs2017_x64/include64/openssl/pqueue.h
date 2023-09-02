@@ -58,19 +58,19 @@
  */
 
 #ifndef HEADER_PQUEUE_H
-# define HEADER_PQUEUE_H
+#define HEADER_PQUEUE_H
 
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 typedef struct _pqueue *pqueue;
 
 typedef struct _pitem {
-    unsigned char priority[8];  /* 64-bit value in big-endian encoding */
+    unsigned char priority[8]; /* 64-bit value in big-endian encoding */
     void *data;
     struct _pitem *next;
 } pitem;
@@ -93,7 +93,7 @@ pitem *pqueue_next(piterator *iter);
 void pqueue_print(pqueue pq);
 int pqueue_size(pqueue pq);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* ! HEADER_PQUEUE_H */
+#endif /* ! HEADER_PQUEUE_H */

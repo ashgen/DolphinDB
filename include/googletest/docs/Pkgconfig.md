@@ -4,16 +4,15 @@ GoogleTest comes with pkg-config files that can be used to determine all
 necessary flags for compiling and linking to GoogleTest (and GoogleMock).
 Pkg-config is a standardised plain-text format containing
 
-  * the includedir (-I) path
-  * necessary macro (-D) definitions
-  * further required flags (-pthread)
-  * the library (-L) path
-  * the library (-l) to link to
+* the includedir (-I) path
+* necessary macro (-D) definitions
+* further required flags (-pthread)
+* the library (-L) path
+* the library (-l) to link to
 
 All current build systems support pkg-config in one way or another. For
 all examples here we assume you want to compile the sample
 `samples/sample3_unittest.cc`.
-
 
 ### CMake ###
 
@@ -46,7 +45,6 @@ splitting the pkg-config `Cflags` variable into include dirs and macros for
 goes for using `_LDFLAGS` over the more commonplace `_LIBRARIES`, which
 happens to discard `-L` flags and `-pthread`.
 
-
 ### Autotools ###
 
 Finding GoogleTest in Autoconf and using it from Automake is also fairly easy:
@@ -77,7 +75,6 @@ testapp_CXXFLAGS = $(GTEST_CFLAGS)
 testapp_LDADD = $(GTEST_LIBS)
 ```
 
-
 ### Meson ###
 
 Meson natively uses pkgconfig to query dependencies:
@@ -95,7 +92,6 @@ testapp = executable(
 
 test('first_and_only_test', testapp)
 ```
-
 
 ### Plain Makefiles ###
 
@@ -119,7 +115,6 @@ testapp: testapp.o
 testapp.o: samples/sample3_unittest.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -c -o $@ $(GTEST_CFLAGS)
 ```
-
 
 ### Help! pkg-config can't find GoogleTest! ###
 

@@ -1,17 +1,18 @@
-class MarshallTest:public testing::Test
-{
+class MarshallTest : public testing::Test {
 protected:
     //Suite
     static void SetUpTestCase() {}
-    static void TearDownTestCase(){}
+
+    static void TearDownTestCase() {}
 
     //Case
-    virtual void SetUp(){}
-    virtual void TearDown(){}
+    virtual void SetUp() {}
+
+    virtual void TearDown() {}
 };
 
 #ifdef LINUX
-TEST_F(MarshallTest, SymbolBaseMarshallStart){
+TEST_F(MarshallTest, SymbolBaseMarshallStart) {
     IO_ERR ret;
     SymbolBaseSP base = new SymbolBase(3);
     base->findAndInsert("314");
@@ -28,7 +29,7 @@ TEST_F(MarshallTest, SymbolBaseMarshallStart){
     EXPECT_EQ(result->find("315"), 2);
 }
 
-TEST_F(MarshallTest, ChunkMarshallStart){
+TEST_F(MarshallTest, ChunkMarshallStart) {
     IO_ERR ret;
     vector<string> sites = {"192.168.0.16:9002:datanode1", "192.168.0.16:9003:datanode2", "192.168.0.16:9004:datanode3", "192.168.0.16:9005:datanode4"};
     Guid id("314");
@@ -50,7 +51,7 @@ TEST_F(MarshallTest, ChunkMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     ConstantUnmarshallFactory unmarshallFactory(inStream);
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
@@ -60,7 +61,7 @@ TEST_F(MarshallTest, ChunkMarshallStart){
     unmarshall->reset();
 }
 
-TEST_F(MarshallTest, DictionaryMarshallStart){
+TEST_F(MarshallTest, DictionaryMarshallStart) {
     IO_ERR ret;
     DictionarySP dict = Util::createDictionary(DT_INT, DT_INT);
     dict->set(Util::createInt(3), Util::createInt(14));
@@ -75,7 +76,7 @@ TEST_F(MarshallTest, DictionaryMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
     unmarshall->start(flag, false, ret);
@@ -83,7 +84,7 @@ TEST_F(MarshallTest, DictionaryMarshallStart){
     EXPECT_EQ(dict->getString(), result->getString());
 }
 
-TEST_F(MarshallTest, SetMarshallStart){
+TEST_F(MarshallTest, SetMarshallStart) {
     IO_ERR ret;
     SetSP set = Util::createSet(DT_INT, 9);
     set->append(Util::createInt(9));
@@ -98,7 +99,7 @@ TEST_F(MarshallTest, SetMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
     unmarshall->start(flag, false, ret);
@@ -106,15 +107,15 @@ TEST_F(MarshallTest, SetMarshallStart){
     EXPECT_EQ(set->getString(), result->getString());
 }
 
-TEST_F(MarshallTest, TableMarshallStart){
+TEST_F(MarshallTest, TableMarshallStart) {
     IO_ERR ret;
     std::vector<std::string> colNames{"id"};
     std::string specialName(5000, 'c');
     colNames.push_back(specialName);
     colNames.push_back("name");
     std::vector<std::string> names{"Tom", "Bob", "Lucy"};
-    long long* ids = new long long[3]{1, 2, 3};
-    int* ages = new int[3]{22, 23, 24};
+    long long *ids = new long long[3]{1, 2, 3};
+    int *ages = new int[3]{22, 23, 24};
     VectorSP idVec = Util::createVector(DT_LONG, 3, 3, true, 0, ids);
     VectorSP nameVec = Util::createVector(DT_STRING, 0, 3);
     nameVec->appendString(names.data(), names.size());
@@ -132,7 +133,7 @@ TEST_F(MarshallTest, TableMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     ConstantUnmarshallFactory unmarshallFactory(inStream);
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
@@ -142,9 +143,9 @@ TEST_F(MarshallTest, TableMarshallStart){
 }
 
 
-TEST_F(MarshallTest, MatrixMarshallStart){
+TEST_F(MarshallTest, MatrixMarshallStart) {
     IO_ERR ret;
-    int* pData = new int[9]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    int *pData = new int[9]{1, 2, 3, 4, 5, 6, 7, 8, 9};
     VectorSP matrix = Util::createMatrix(DT_INT, 3, 3, 9, 0, pData);
     VectorSP rowLabelVec = Util::createVector(DT_STRING, 0, 3);
     VectorSP colLabelVec = Util::createVector(DT_STRING, 0, 3);
@@ -157,8 +158,8 @@ TEST_F(MarshallTest, MatrixMarshallStart){
 
     DataOutputStreamSP outStream = new DataOutputStream(1024);
     ConstantMarshallFactory factory(outStream);
-    EXPECT_EQ(factory.getConstantMarshall((DATA_FORM)-1), nullptr);
-    EXPECT_EQ(factory.getConstantMarshall((DATA_FORM)9), nullptr);
+    EXPECT_EQ(factory.getConstantMarshall((DATA_FORM) -1), nullptr);
+    EXPECT_EQ(factory.getConstantMarshall((DATA_FORM) 9), nullptr);
     ConstantMarshallSP marshall = ConstantMarshallFactory::getInstance(matrix->getForm(), outStream);
 
     EXPECT_FALSE(marshall->start(nullptr, 1025, matrix, true, false, ret));
@@ -169,18 +170,18 @@ TEST_F(MarshallTest, MatrixMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     ConstantUnmarshallFactory unmarshallFactory(inStream);
-    EXPECT_EQ(unmarshallFactory.getConstantUnmarshall((DATA_FORM)-1), nullptr);
-    EXPECT_EQ(unmarshallFactory.getConstantUnmarshall((DATA_FORM)9), nullptr);
+    EXPECT_EQ(unmarshallFactory.getConstantUnmarshall((DATA_FORM) -1), nullptr);
+    EXPECT_EQ(unmarshallFactory.getConstantUnmarshall((DATA_FORM) 9), nullptr);
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
     unmarshall->start(flag, false, ret);
     ConstantSP result = unmarshall->getConstant();
     EXPECT_EQ(matrix->getString(), result->getString());
 }
 
-TEST_F(MarshallTest, PairMarshallStart){
+TEST_F(MarshallTest, PairMarshallStart) {
     IO_ERR ret;
     VectorSP vec = Util::createVector(DT_INT, 0, 100);
     std::vector<int> data{314, 315, 316};
@@ -189,7 +190,7 @@ TEST_F(MarshallTest, PairMarshallStart){
     DataOutputStreamSP outStream = new DataOutputStream(1024);
     ConstantMarshallSP vectorMarshall = ConstantMarshallFactory::getInstance(DF_PAIR, outStream);
 
-    dynamic_cast<VectorMarshall*>(vectorMarshall.get())->setCompressMethod(COMPRESS_LZ4);
+    dynamic_cast<VectorMarshall *>(vectorMarshall.get())->setCompressMethod(COMPRESS_LZ4);
 
     EXPECT_TRUE(vectorMarshall->start(vec, false, true, ret));
 
@@ -198,7 +199,7 @@ TEST_F(MarshallTest, PairMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     ConstantUnmarshallSP unmarshall = ConstantUnmarshallFactory::getInstance(DF_PAIR, inStream);
     unmarshall->start(flag, false, ret);
@@ -206,7 +207,7 @@ TEST_F(MarshallTest, PairMarshallStart){
     EXPECT_EQ(result->getString(), vec->getString());
 }
 
-TEST_F(MarshallTest, SymbolVectorMarshallStart){
+TEST_F(MarshallTest, SymbolVectorMarshallStart) {
     IO_ERR ret;
     VectorSP symbolVec = Util::createVector(DT_SYMBOL, 0, 100);
     std::vector<std::string> data{"314", "315", "316"};
@@ -215,7 +216,7 @@ TEST_F(MarshallTest, SymbolVectorMarshallStart){
     DataOutputStreamSP outStream = new DataOutputStream(1024);
     ConstantMarshallSP vectorMarshall = ConstantMarshallFactory::getInstance(DF_VECTOR, outStream);
 
-    dynamic_cast<VectorMarshall*>(vectorMarshall.get())->setCompressMethod(COMPRESS_LZ4);
+    dynamic_cast<VectorMarshall *>(vectorMarshall.get())->setCompressMethod(COMPRESS_LZ4);
     std::string sendHeader("header\n");
 
     EXPECT_FALSE(vectorMarshall->start(nullptr, 1025, symbolVec, true, false, ret));
@@ -229,7 +230,7 @@ TEST_F(MarshallTest, SymbolVectorMarshallStart){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
     ConstantUnmarshallSP unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
     unmarshall->start(flag, false, ret);
@@ -237,13 +238,13 @@ TEST_F(MarshallTest, SymbolVectorMarshallStart){
     EXPECT_EQ(result->getString(), symbolVec->getString());
 }
 
-TEST_F(MarshallTest,MarshalFlush){
+TEST_F(MarshallTest, MarshalFlush) {
     ConstantSP scalar = Util::createInt(314);
     DataOutputStreamSP outStream = new DataOutputStream(1024);
-    ConstantMarshallSP emptyMarshall = ConstantMarshallFactory::getInstance((DATA_FORM)-1, outStream);
+    ConstantMarshallSP emptyMarshall = ConstantMarshallFactory::getInstance((DATA_FORM) -1, outStream);
     EXPECT_EQ(emptyMarshall.isNull(), true);
     ConstantMarshallSP marshall = ConstantMarshallFactory::getInstance(scalar->getForm(), outStream);
-    
+
     std::string sendHeader("header\n");
 
     IO_ERR ret;
@@ -259,9 +260,9 @@ TEST_F(MarshallTest,MarshalFlush){
     short flag;
     inStream->readShort(flag);
     DATA_FORM form = static_cast<DATA_FORM>(flag >> 8);
-    DATA_TYPE type = static_cast<DATA_TYPE >(flag & 0xff);
+    DATA_TYPE type = static_cast<DATA_TYPE>(flag & 0xff);
 
-    auto emptyUnmarshall = ConstantUnmarshallFactory::getInstance((DATA_FORM)-1, inStream);
+    auto emptyUnmarshall = ConstantUnmarshallFactory::getInstance((DATA_FORM) -1, inStream);
     EXPECT_EQ(emptyUnmarshall.isNull(), true);
     auto unmarshall = ConstantUnmarshallFactory::getInstance(form, inStream);
     unmarshall->start(flag, false, ret);
@@ -269,9 +270,9 @@ TEST_F(MarshallTest,MarshalFlush){
     EXPECT_EQ(result->getInt(), 314);
 }
 
-TEST_F(MarshallTest, StringVectorDeserialize_OriginSizeSmaller){
+TEST_F(MarshallTest, StringVectorDeserialize_OriginSizeSmaller) {
     char buf[MARSHALL_BUFFER_SIZE];
-    
+
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Tom", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -286,7 +287,7 @@ TEST_F(MarshallTest, StringVectorDeserialize_OriginSizeSmaller){
     EXPECT_EQ(result->getString(), vec->getString());
 }
 
-TEST_F(MarshallTest, StringVectorTrim_ContainNull){
+TEST_F(MarshallTest, StringVectorTrim_ContainNull) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"   ", "Bol", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -297,7 +298,7 @@ TEST_F(MarshallTest, StringVectorTrim_ContainNull){
     EXPECT_EQ(vec->get(0)->getString(), "");
 }
 
-TEST_F(MarshallTest, StringVectorStrip_ContainNull){
+TEST_F(MarshallTest, StringVectorStrip_ContainNull) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"Lily \r\n", "Bol", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -308,7 +309,7 @@ TEST_F(MarshallTest, StringVectorStrip_ContainNull){
     EXPECT_EQ(vec->get(0)->getString(), "Lily");
 }
 
-TEST_F(MarshallTest, StringVectorSet_NOT_LITERAL){
+TEST_F(MarshallTest, StringVectorSet_NOT_LITERAL) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -323,17 +324,17 @@ TEST_F(MarshallTest, StringVectorSet_NOT_LITERAL){
     EXPECT_EQ(vec->get(1)->getString(), "315");
 }
 
-TEST_F(MarshallTest, StringVectorGet_INDEX_LARGERTHAN_SIZE){
+TEST_F(MarshallTest, StringVectorGet_INDEX_LARGERTHAN_SIZE) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
 
     VectorSP indexVec = Util::createIndexVector(0, 4);
-    auto result = dynamic_cast<StringVector*>(vec.get())->get(indexVec);
+    auto result = dynamic_cast<StringVector *>(vec.get())->get(indexVec);
     EXPECT_EQ(result->get(3)->getString(), "");
 }
 
-TEST_F(MarshallTest, StringVectorGet_NOT_INDEXARRAY){
+TEST_F(MarshallTest, StringVectorGet_NOT_INDEXARRAY) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -343,12 +344,12 @@ TEST_F(MarshallTest, StringVectorGet_NOT_INDEXARRAY){
     VectorSP indexVec = Util::createVector(DT_DOUBLE, 0, 4);
     std::vector<double> index{0, 1, 2, 3};
     indexVec->appendDouble(index.data(), index.size());
- 
-    auto result = dynamic_cast<StringVector*>(vec.get())->get(indexVec);
+
+    auto result = dynamic_cast<StringVector *>(vec.get())->get(indexVec);
     EXPECT_EQ(result->get(3)->getString(), "");
 }
 
-TEST_F(MarshallTest, StringVectorAppend_NOT_LITERAL){
+TEST_F(MarshallTest, StringVectorAppend_NOT_LITERAL) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 3);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -362,21 +363,21 @@ TEST_F(MarshallTest, StringVectorAppend_NOT_LITERAL){
     EXPECT_EQ(vec->get(4)->getString(), "315");
 }
 
-TEST_F(MarshallTest, StringVectorAppendString_LESSTHAN_CAPACITY){
+TEST_F(MarshallTest, StringVectorAppendString_LESSTHAN_CAPACITY) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
 
     char str1[] = "hello";
     char str2[] = "hi";
-    char* str[] = {str1, str2};
+    char *str[] = {str1, str2};
 
     vec->appendString(str, 2);
     EXPECT_EQ(vec->get(3)->getString(), "hello");
     EXPECT_EQ(vec->get(4)->getString(), "hi");
 }
 
-TEST_F(MarshallTest, StringVectorRemove_NOINDEXARRAY){
+TEST_F(MarshallTest, StringVectorRemove_NOINDEXARRAY) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Lily", "Bob", "Lucy"};
     vec->appendString(names.data(), names.size());
@@ -387,7 +388,7 @@ TEST_F(MarshallTest, StringVectorRemove_NOINDEXARRAY){
     std::vector<double> index{0, 1};
     indexVec->appendDouble(index.data(), index.size());
     EXPECT_FALSE(vec->remove(indexVec));
-    
+
     indexVec = Util::createVector(DT_INT, 0, 2);
     std::vector<int> ind{0, 2};
     indexVec->appendInt(ind.data(), ind.size());
@@ -397,7 +398,7 @@ TEST_F(MarshallTest, StringVectorRemove_NOINDEXARRAY){
     EXPECT_EQ(vec->get(0)->getString(), "");
 }
 
-TEST_F(MarshallTest, StringVectorFill_LENGTH_NOTEQUAL_SIZE){
+TEST_F(MarshallTest, StringVectorFill_LENGTH_NOTEQUAL_SIZE) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Lily", "Bob", "Lucy", "Tom", "Riddle"};
     vec->appendString(names.data(), names.size());
@@ -419,38 +420,38 @@ TEST_F(MarshallTest, StringVectorFill_LENGTH_NOTEQUAL_SIZE){
     EXPECT_EQ(vec->getString(2), "314");
 }
 
-TEST_F(MarshallTest, StringVectorGetString_String){
+TEST_F(MarshallTest, StringVectorGetString_String) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Lily", "Bob", "Lucy", "Tom", "Riddle"};
     vec->appendString(names.data(), names.size());
 
-    std::string* strs[5]{nullptr};
-    dynamic_cast<StringVector*>(vec.get())->getString(0, 5, strs);
+    std::string *strs[5]{nullptr};
+    dynamic_cast<StringVector *>(vec.get())->getString(0, 5, strs);
     EXPECT_EQ(*strs[0], "Lily");
     EXPECT_EQ(*strs[4], "Riddle");
 }
 
-TEST_F(MarshallTest, StringVectorGetString_Char){
+TEST_F(MarshallTest, StringVectorGetString_Char) {
     VectorSP vec = Util::createVector(DT_STRING, 0, 9);
     std::vector<std::string> names{"Lily", "Bob", "Lucy", "Tom", "Riddle"};
     vec->appendString(names.data(), names.size());
 
-    char* strs[5]{nullptr};
-    dynamic_cast<StringVector*>(vec.get())->getString(0, 5, strs);
+    char *strs[5]{nullptr};
+    dynamic_cast<StringVector *>(vec.get())->getString(0, 5, strs);
     EXPECT_EQ(std::string(strs[0]), "Lily");
     EXPECT_EQ(std::string(strs[4]), "Riddle");
 }
 
-TEST_F(MarshallTest, StringVectorGetGetAllocatedMemory){
+TEST_F(MarshallTest, StringVectorGetGetAllocatedMemory) {
     ConstantSP vec = Util::createVector(DT_STRING, 0, 9);
     EXPECT_EQ(vec->getAllocatedMemory(), 64);
-    EXPECT_EQ(dynamic_cast<StringVector*>(vec.get())->getAllocatedMemory(0), 64);
+    EXPECT_EQ(dynamic_cast<StringVector *>(vec.get())->getAllocatedMemory(0), 64);
     std::vector<std::string> names{"Lily", "Bob", "Lucy", "Tom", "Riddle"};
-    dynamic_cast<StringVector*>(vec.get())->appendString(names.data(), names.size());
+    dynamic_cast<StringVector *>(vec.get())->appendString(names.data(), names.size());
     EXPECT_EQ(vec->getAllocatedMemory(), 129);
 }
 
-TEST_F(MarshallTest, AnyVectorAssign_Fail){
+TEST_F(MarshallTest, AnyVectorAssign_Fail) {
     VectorSP vec = Util::createVector(DT_ANY, 0, 9);
     ConstantSP element1 = Util::createInt(0);
     ConstantSP element2 = Util::createDouble(2);
@@ -465,7 +466,7 @@ TEST_F(MarshallTest, AnyVectorAssign_Fail){
     EXPECT_EQ(vec->get(1)->getInt(), 0);
 }
 
-TEST_F(MarshallTest, AnyVectorFill_SizeNotEqual){
+TEST_F(MarshallTest, AnyVectorFill_SizeNotEqual) {
     VectorSP vec = Util::createVector(DT_ANY, 0, 9);
     ConstantSP element1 = Util::createInt(0);
     ConstantSP element2 = Util::createDouble(2);
@@ -477,11 +478,11 @@ TEST_F(MarshallTest, AnyVectorFill_SizeNotEqual){
     vec2->appendString(names.data(), names.size());
 
     vec->fill(0, 1, vec2);
-    EXPECT_EQ(dynamic_cast<AnyVector*>(vec.get())->getAllocatedMemory(), 281);
+    EXPECT_EQ(dynamic_cast<AnyVector *>(vec.get())->getAllocatedMemory(), 281);
     EXPECT_EQ(vec->get(0)->getString(), vec2->getString());
 }
 
-TEST_F(MarshallTest, AnyVectorSet_Vector_NotContainNull){
+TEST_F(MarshallTest, AnyVectorSet_Vector_NotContainNull) {
     VectorSP vec = Util::createVector(DT_ANY, 0, 9);
     ConstantSP element1 = Util::createInt(0);
     ConstantSP element2 = Util::createDouble(2);
@@ -499,7 +500,7 @@ TEST_F(MarshallTest, AnyVectorSet_Vector_NotContainNull){
     EXPECT_EQ(vec->getString(1), "Bob");
 }
 
-TEST_F(MarshallTest, AnyVectorSet_Scalar){
+TEST_F(MarshallTest, AnyVectorSet_Scalar) {
     VectorSP vec = Util::createVector(DT_ANY, 0, 9);
     ConstantSP element1 = Util::createInt(0);
     ConstantSP element2 = Util::createDouble(2);
@@ -516,14 +517,14 @@ TEST_F(MarshallTest, AnyVectorSet_Scalar){
     EXPECT_EQ(vec->getString(1), "");
 }
 
-TEST_F(MarshallTest, AnyVectorGet){
+TEST_F(MarshallTest, AnyVectorGet) {
     ConstantSP vec = Util::createVector(DT_ANY, 0, 9);
 
     ConstantSP element1 = Util::createInt(0);
     ConstantSP element2 = Util::createString("");
-    
-    dynamic_cast<AnyVector*>(vec.get())->append(element1);
-    dynamic_cast<AnyVector*>(vec.get())->append(element2);
+
+    dynamic_cast<AnyVector *>(vec.get())->append(element1);
+    dynamic_cast<AnyVector *>(vec.get())->append(element2);
     VectorSP doubleIndexVec = Util::createVector(DT_DOUBLE, 0, 9);
     std::vector<double> value1{0, 1, 2};
     doubleIndexVec->appendDouble(value1.data(), value1.size());
@@ -534,17 +535,17 @@ TEST_F(MarshallTest, AnyVectorGet){
     EXPECT_EQ(result1->getString(), result2->getString());
 }
 
-TEST_F(MarshallTest, FastBoolVectorFill_SizeNotEqual){
-    bool* values = new bool[3]{true, true, false};
+TEST_F(MarshallTest, FastBoolVectorFill_SizeNotEqual) {
+    bool *values = new bool[3]{true, true, false};
     VectorSP vec = Util::createVector(DT_BOOL, 3, 9, true, 0, values);
 
-    bool* value2 = new bool[2]{false, false};
+    bool *value2 = new bool[2]{false, false};
     VectorSP vec2 = Util::createVector(DT_BOOL, 2, 9, true, 0, value2);
 
     EXPECT_ANY_THROW(vec->fill(0, 1, vec2));
 }
 
-TEST_F(MarshallTest, CountDays){
+TEST_F(MarshallTest, CountDays) {
     EXPECT_EQ(Util::countDays(2022, 11, 15), 19311);
     EXPECT_EQ(INT_MIN, Util::countDays(2022, 0, 1));
     EXPECT_EQ(INT_MIN, Util::countDays(2022, 13, 1));
@@ -553,22 +554,22 @@ TEST_F(MarshallTest, CountDays){
     EXPECT_EQ(INT_MIN, Util::countDays(2000, 11, 32));
 }
 
-TEST_F(MarshallTest, parseYear){
+TEST_F(MarshallTest, parseYear) {
     EXPECT_EQ(2370, Util::parseYear(146100));
     EXPECT_EQ(1970, Util::parseYear(274));
     EXPECT_EQ(1999, Util::parseYear(10956));
 }
 
-TEST_F(MarshallTest, getMonthEndAndParseConstant){
+TEST_F(MarshallTest, getMonthEndAndParseConstant) {
     EXPECT_EQ(11291, Util::getMonthEnd(11276));
     EXPECT_EQ(19326, Util::getMonthEnd(19311));
     EXPECT_EQ(17135, Util::getMonthEnd(17120));
     EXPECT_EQ(nullptr, Util::parseConstant(-1, ""));
 }
 
-TEST_F(MarshallTest, isFlatDictionary_SizeLargerThan1024){
+TEST_F(MarshallTest, isFlatDictionary_SizeLargerThan1024) {
     auto dict = Util::createDictionary(DT_STRING, DT_INT);
-    for(int i = 0; i < 1025; ++i){
+    for (int i = 0; i < 1025; ++i) {
         ConstantSP key = Util::createString(std::to_string(i));
         ConstantSP value = Util::createInt(i);
         dict->set(key, value);
@@ -576,7 +577,7 @@ TEST_F(MarshallTest, isFlatDictionary_SizeLargerThan1024){
     EXPECT_FALSE(Util::isFlatDictionary(dict));
 }
 
-TEST_F(MarshallTest, isFlatDictionary_ValueNotScalar){
+TEST_F(MarshallTest, isFlatDictionary_ValueNotScalar) {
     auto dict = Util::createDictionary(DT_STRING, DT_INT_ARRAY);
     ConstantSP key = Util::createString(std::to_string(1));
     VectorSP value = Util::createVector(DT_INT, 0, 3);
@@ -586,7 +587,7 @@ TEST_F(MarshallTest, isFlatDictionary_ValueNotScalar){
     EXPECT_FALSE(Util::isFlatDictionary(dict));
 }
 
-TEST_F(MarshallTest, isFlatDictionary_ValueType){
+TEST_F(MarshallTest, isFlatDictionary_ValueType) {
     auto dict = Util::createDictionary(DT_STRING, DT_DATEHOUR);
     ConstantSP key = Util::createString("1");
     ConstantSP value = new DateHour(60);
@@ -594,14 +595,14 @@ TEST_F(MarshallTest, isFlatDictionary_ValueType){
     EXPECT_FALSE(Util::isFlatDictionary(dict));
 }
 
-TEST_F(MarshallTest, createTable_2Argument){
+TEST_F(MarshallTest, createTable_2Argument) {
     {
         DictionarySP dict1 = Util::createDictionary(DT_INT, DT_INT);
         EXPECT_EQ(Util::createTable(dict1.get(), 1), nullptr);
     }
     {
         DictionarySP dict2 = Util::createDictionary(DT_STRING, DT_INT);
-        for(int i = 0; i < 1025; ++i){
+        for (int i = 0; i < 1025; ++i) {
             ConstantSP key = Util::createString(std::to_string(i));
             ConstantSP value = Util::createInt(i);
             dict2->set(key, value);
@@ -626,7 +627,7 @@ TEST_F(MarshallTest, createTable_2Argument){
     }
 }
 
-TEST_F(MarshallTest, createTable_5Argument){
+TEST_F(MarshallTest, createTable_5Argument) {
     {
         std::vector<std::string> colNames{"Name", "Age"};
         std::vector<DATA_TYPE> colTypes{DT_VOID, DT_OBJECT};
@@ -644,7 +645,7 @@ TEST_F(MarshallTest, createTable_5Argument){
     }
 }
 
-TEST_F(MarshallTest, createTable_toHex){
+TEST_F(MarshallTest, createTable_toHex) {
     char buf1[256]{};
     char buf2[256]{};
     unsigned char data[]{'1', 'Z', 'z', 160};
@@ -655,7 +656,7 @@ TEST_F(MarshallTest, createTable_toHex){
     EXPECT_EQ(strcmp(buf2, "315a7aa0"), 0);
 }
 
-TEST_F(MarshallTest, createTable_fromHex){
+TEST_F(MarshallTest, createTable_fromHex) {
     unsigned char buf1[256]{0};
     unsigned char buf2[256]{0};
     unsigned char result1[]{102, 170, 170};
@@ -670,13 +671,13 @@ TEST_F(MarshallTest, createTable_fromHex){
     std::string data4("0z");
     EXPECT_FALSE(Util::fromHex(data4.c_str(), data4.size(), true, buf1));
     std::string data5("aaAA66");
-    Util::fromHex(data5.c_str(), data5.size(), true, buf1); 
+    Util::fromHex(data5.c_str(), data5.size(), true, buf1);
     EXPECT_EQ(memcmp(buf1, result1, sizeof(result1)), 0);
     Util::fromHex(data5.c_str(), data5.size(), false, buf2);
     EXPECT_EQ(memcmp(buf2, result2, sizeof(result2)), 0);
 }
 
-TEST_F(MarshallTest, fromGuid){
+TEST_F(MarshallTest, fromGuid) {
     unsigned char buf1[256]{0};
     std::string guid1("01234567-901214567-9012-456789012345");
     EXPECT_FALSE(Util::fromGuid(guid1.c_str(), buf1));
@@ -690,7 +691,7 @@ TEST_F(MarshallTest, fromGuid){
     EXPECT_EQ(memcmp(buf1, result1, sizeof(result1)), 0);
 }
 
-TEST_F(MarshallTest, getDurationUnit){
+TEST_F(MarshallTest, getDurationUnit) {
     EXPECT_EQ(DU_YEAR, Util::getDurationUnit("y"));
     EXPECT_EQ(-1, Util::getDurationUnit("yY"));
     EXPECT_EQ(3600, Util::getTemporalDurationConversionRatio(DT_SECOND, DU_HOUR));
@@ -710,7 +711,7 @@ TEST_F(MarshallTest, getDurationUnit){
     EXPECT_FALSE(Util::startWith("123", "1234"));
 }
 
-TEST_F(MarshallTest, isVariableCandidate){
+TEST_F(MarshallTest, isVariableCandidate) {
     EXPECT_TRUE(Util::isVariableCandidate("a123"));
     EXPECT_FALSE(Util::isVariableCandidate("?"));
     EXPECT_FALSE(Util::isVariableCandidate("}"));
@@ -731,7 +732,7 @@ TEST_F(MarshallTest, isVariableCandidate){
     std::cout << Util::toMicroTimestampStr(now, false) << std::endl;
 }
 
-TEST_F(MarshallTest, getDataTypeSize){
+TEST_F(MarshallTest, getDataTypeSize) {
     EXPECT_EQ(sizeof(char), Util::getDataTypeSize(DT_COMPRESS));
     EXPECT_EQ(sizeof(int), Util::getDataTypeSize(DT_SYMBOL));
     std::vector<std::string> elems;
@@ -758,7 +759,7 @@ TEST_F(MarshallTest, getDataTypeSize){
     EXPECT_EQ(dest, "\"123\"\"\"");
 }
 
-TEST_F(MarshallTest, sleep){
+TEST_F(MarshallTest, sleep) {
     Util::sleep(0);
     ConstantSP schema;
     EXPECT_ANY_THROW(Util::createDomain(HIER, DT_STRING, schema));
@@ -773,13 +774,13 @@ TEST_F(MarshallTest, sleep){
 
     SymbolBaseSP base = new SymbolBase(1);
     Util::createSymbolVector(base, 0, 3);
-    int* data1 = new int[3]{1, 2, 3};
+    int *data1 = new int[3]{1, 2, 3};
     VectorSP vec = Util::createSymbolVector(base, 0, 3, true, data1);
     EXPECT_EQ("[]", vec->getString());
-    EXPECT_EQ(nullptr, Util::createSymbolVector(base, 0, 3, true, nullptr, (void**)&base));
+    EXPECT_EQ(nullptr, Util::createSymbolVector(base, 0, 3, true, nullptr, (void **) &base));
 }
 
-TEST_F(MarshallTest, createValue){
+TEST_F(MarshallTest, createValue) {
     EXPECT_DOUBLE_EQ(100, Util::createValue(DT_DECIMAL64, 100, "decimal64")->getDouble());
     EXPECT_DOUBLE_EQ(100, Util::createValue(DT_DECIMAL32, 100, "decimal64")->getDouble());
     EXPECT_DOUBLE_EQ(100, Util::createValue(DT_DECIMAL32, 100, "decimal32", nullptr, 3)->getDouble());
@@ -790,27 +791,27 @@ TEST_F(MarshallTest, createValue){
     EXPECT_ANY_THROW(Util::createValue(DT_CHAR, LLONG_MIN, "char"));
     EXPECT_ANY_THROW(Util::createValue(DT_CHAR, LLONG_MAX, "char"));
 
-    ConstantSP object = Util::createObject(DT_INT, (const char*)0);
+    ConstantSP object = Util::createObject(DT_INT, (const char *) 0);
     EXPECT_EQ("", object->getString());
-    ConstantSP object1 = Util::createObject(DT_INT, (const void*)0);
+    ConstantSP object1 = Util::createObject(DT_INT, (const void *) 0);
     EXPECT_EQ("", object1->getString());
     int32_t val1 = 200;
-    ConstantSP object2 = Util::createObject(DT_DECIMAL32, (const void*)&val1, nullptr, 0);
+    ConstantSP object2 = Util::createObject(DT_DECIMAL32, (const void *) &val1, nullptr, 0);
     EXPECT_DOUBLE_EQ(200, object2->getDouble());
     int64_t val2 = 200;
-    ConstantSP object3 = Util::createObject(DT_DECIMAL64, (const void*)&val2, nullptr, 0);
+    ConstantSP object3 = Util::createObject(DT_DECIMAL64, (const void *) &val2, nullptr, 0);
     EXPECT_DOUBLE_EQ(200, object3->getDouble());
     std::string str1("123");
-    ConstantSP object4 = Util::createObject(DT_SYMBOL, (const void*)str1.c_str(), nullptr, 0);
+    ConstantSP object4 = Util::createObject(DT_SYMBOL, (const void *) str1.c_str(), nullptr, 0);
     EXPECT_EQ("123", object4->getString());
-    ConstantSP object5 = Util::createObject(DT_STRING, (const void*)str1.c_str(), nullptr, 0);
+    ConstantSP object5 = Util::createObject(DT_STRING, (const void *) str1.c_str(), nullptr, 0);
     EXPECT_EQ("123", object5->getString());
-    ConstantSP object6 = Util::createObject(DT_BLOB, (const void*)str1.c_str(), nullptr, 0);
+    ConstantSP object6 = Util::createObject(DT_BLOB, (const void *) str1.c_str(), nullptr, 0);
     EXPECT_EQ("123", object6->getString());
-    EXPECT_ANY_THROW(Util::createObject(DT_SECOND, (const void*)str1.c_str(), nullptr, 0));
+    EXPECT_ANY_THROW(Util::createObject(DT_SECOND, (const void *) str1.c_str(), nullptr, 0));
 }
 
-TEST_F(MarshallTest, createObject){
+TEST_F(MarshallTest, createObject) {
     ConstantSP object1 = Util::createObject(DT_DECIMAL32, 300.0f, nullptr, 0);
     EXPECT_DOUBLE_EQ(300, object1->getDouble());
     ConstantSP object2 = Util::createObject(DT_DECIMAL32, 300.0f, nullptr, 1);
@@ -829,24 +830,24 @@ TEST_F(MarshallTest, createObject){
     EXPECT_DOUBLE_EQ(400, object7->getDouble());
 }
 
-TEST_F(MarshallTest, createVectorObject){
+TEST_F(MarshallTest, createVectorObject) {
     std::vector<double> vals{1, 2};
     ErrorCodeInfo info;
     EXPECT_TRUE(Util::createObject(DT_SECOND, vals, &info, 0).isNull());
 
-    std::vector<Constant*> vals1{Util::createInt(1)};
+    std::vector<Constant *> vals1{Util::createInt(1)};
     EXPECT_EQ("([1])", Util::createObject(DT_INT, vals1)->getString());
     ConstantSP val1 = Util::createInt(2);
     std::vector<ConstantSP> vec{val1};
     EXPECT_EQ("([2])", Util::createObject(DT_INT, vec)->getString());
     unsigned char c[] = "aa";
-    std::vector<const unsigned char*> vec1{c};
+    std::vector<const unsigned char *> vec1{c};
     EXPECT_EQ("([\"aa\"])", Util::createObject(DT_STRING, vec1)->getString());
-    std::vector<const void*> vec2{c};
+    std::vector<const void *> vec2{c};
     EXPECT_EQ("([\"aa\"])", Util::createObject(DT_STRING, vec2)->getString());
 }
 
-TEST_F(MarshallTest, checkColDataType){
+TEST_F(MarshallTest, checkColDataType) {
     ConstantSP cons = Util::createVector(DT_INT_ARRAY, 0, 1);
     EXPECT_TRUE(Util::checkColDataType(DT_INT_ARRAY, false, cons));
     EXPECT_FALSE(Util::checkColDataType(DT_INT, false, cons));
@@ -870,7 +871,7 @@ TEST_F(MarshallTest, checkColDataType){
     Util::writeFile(file2.c_str(), buf, sizeof(buf));
 }
 
-TEST_F(MarshallTest, isDigitOrLetter){
+TEST_F(MarshallTest, isDigitOrLetter) {
     EXPECT_TRUE(Util::isDigit('1'));
     EXPECT_FALSE(Util::isDigit('+'));
     EXPECT_FALSE(Util::isDigit('A'));
@@ -886,7 +887,7 @@ TEST_F(MarshallTest, isDigitOrLetter){
     EXPECT_TRUE(Util::is64BIT());
 }
 
-TEST_F(MarshallTest, NumberFormat_initialize){
+TEST_F(MarshallTest, NumberFormat_initialize) {
     EXPECT_ANY_THROW(NumberFormat f1(""));
     EXPECT_ANY_THROW(NumberFormat f2("0.##A####"));
     EXPECT_ANY_THROW(NumberFormat f4("0.######EE0"));
@@ -916,7 +917,7 @@ TEST_F(MarshallTest, NumberFormat_initialize){
     EXPECT_EQ(".0000010", f21.format(0.000001));
 }
 
-TEST_F(MarshallTest, NumberFormat_format){
+TEST_F(MarshallTest, NumberFormat_format) {
     NumberFormat f0("000123");
     EXPECT_EQ("010123", f0.format(10));
     NumberFormat f1("123#.0000000#######");
@@ -930,7 +931,7 @@ TEST_F(MarshallTest, NumberFormat_format){
     EXPECT_EQ("010.0000", f3.format(10));
 }
 
-TEST_F(MarshallTest, NumberFormat_decimalFormat){
+TEST_F(MarshallTest, NumberFormat_decimalFormat) {
     DecimalFormat f1("000###");
     EXPECT_EQ("100", f1.format(100));
     DecimalFormat f2("000###;000###");
@@ -940,7 +941,7 @@ TEST_F(MarshallTest, NumberFormat_decimalFormat){
     DecimalFormat f4("000###;");
 }
 
-TEST_F(MarshallTest, NumberFormat_TemporalFormat){
+TEST_F(MarshallTest, NumberFormat_TemporalFormat) {
     EXPECT_ANY_THROW(TemporalFormat f1(""));
     EXPECT_ANY_THROW(TemporalFormat f2("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
     EXPECT_ANY_THROW(TemporalFormat f3("yyyy\\"));
@@ -963,7 +964,7 @@ TEST_F(MarshallTest, NumberFormat_TemporalFormat){
     EXPECT_EQ("1970JAN04AM 000112000", f11.format(300000000, DT_TIMESTAMP));
 }
 
-TEST_F(MarshallTest, ConstantFactory_parseConstant){
+TEST_F(MarshallTest, ConstantFactory_parseConstant) {
     ConstantFactory f;
     EXPECT_ANY_THROW(f.parseConstant(-1, ""));
     EXPECT_ANY_THROW(f.parseConstant(44, ""));
@@ -975,28 +976,28 @@ TEST_F(MarshallTest, ConstantFactory_parseConstant){
     ConstantSP int1 = f.parseConstant(DT_INT, "123");
     ConstantSP double1 = f.parseConstant(CONSTANT_DOUBLE_ENUM, "p");
     ConstantSP double2 = f.parseConstant(CONSTANT_DOUBLE_ENUM, "e");
-    
-    EXPECT_ANY_THROW(f.createConstant((DATA_TYPE)-1, 0));
-    EXPECT_ANY_THROW(f.createConstant((DATA_TYPE)100, 0));
+
+    EXPECT_ANY_THROW(f.createConstant((DATA_TYPE) -1, 0));
+    EXPECT_ANY_THROW(f.createConstant((DATA_TYPE) 100, 0));
     EXPECT_ANY_THROW(f.createConstant(DT_DICTIONARY, 0));
     ConstantSP int2 = f.createConstant(DT_INT, 123);
 
-    EXPECT_ANY_THROW(f.createConstantVector((DATA_TYPE)-1, 0, 1, true, 0, nullptr, nullptr, 0, false));
-    EXPECT_ANY_THROW(f.createConstantVector((DATA_TYPE)100, 0, 1, true, 0, nullptr, nullptr, 0, false));
-    EXPECT_ANY_THROW(f.createConstantArrayVector((DATA_TYPE)-1, 0, 1, true, 0, nullptr, nullptr, nullptr, 0, false));
-    EXPECT_ANY_THROW(f.createConstantArrayVector((DATA_TYPE)200, 0, 1, true, 0, nullptr, nullptr, nullptr, 0, false));
-    EXPECT_ANY_THROW(f.createConstantMatrix((DATA_TYPE)-1, 1, 1, 1, 1, nullptr, nullptr, 0, false));
-    EXPECT_ANY_THROW(f.createConstantMatrix((DATA_TYPE)100, 1, 1, 1, 1, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantVector((DATA_TYPE) -1, 0, 1, true, 0, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantVector((DATA_TYPE) 100, 0, 1, true, 0, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantArrayVector((DATA_TYPE) -1, 0, 1, true, 0, nullptr, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantArrayVector((DATA_TYPE) 200, 0, 1, true, 0, nullptr, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantMatrix((DATA_TYPE) -1, 1, 1, 1, 1, nullptr, nullptr, 0, false));
+    EXPECT_ANY_THROW(f.createConstantMatrix((DATA_TYPE) 100, 1, 1, 1, 1, nullptr, nullptr, 0, false));
     EXPECT_EQ(DT_VOID, f.getDataType("FOR"));
     EXPECT_EQ(-1, f.getDataForm("FOR"));
-    EXPECT_EQ("UknownType-1", f.getDataTypeString((DATA_TYPE)-1));
-    EXPECT_EQ("UknownForm-1", f.getDataFormString((DATA_FORM)-1));
-    EXPECT_EQ("UknownForm10", f.getDataFormString((DATA_FORM)10));
-    EXPECT_EQ("UknownTable-1", f.getTableTypeString((TABLE_TYPE)-1));
-    EXPECT_EQ("UknownTable10", f.getTableTypeString((TABLE_TYPE)10));
+    EXPECT_EQ("UknownType-1", f.getDataTypeString((DATA_TYPE) -1));
+    EXPECT_EQ("UknownForm-1", f.getDataFormString((DATA_FORM) -1));
+    EXPECT_EQ("UknownForm10", f.getDataFormString((DATA_FORM) 10));
+    EXPECT_EQ("UknownTable-1", f.getTableTypeString((TABLE_TYPE) -1));
+    EXPECT_EQ("UknownTable10", f.getTableTypeString((TABLE_TYPE) 10));
 }
 
-TEST_F(MarshallTest, ConstantFactory_createDictionary){
+TEST_F(MarshallTest, ConstantFactory_createDictionary) {
     ConstantFactory f;
     DictionarySP d1 = f.createDictionary(DT_INT, DT_INT, DT_UUID);
     DictionarySP d2 = f.createDictionary(DT_INT, DT_INT, DT_IP);
@@ -1006,11 +1007,11 @@ TEST_F(MarshallTest, ConstantFactory_createDictionary){
     DictionarySP d6 = f.createDictionary(DT_SHORT, DT_SHORT, DT_ANY);
     DictionarySP d7 = f.createDictionary(DT_SECOND, DT_CHAR, DT_ANY);
 
-    EXPECT_EQ("UnknowCategory-1", f.getCategoryString((DATA_CATEGORY)-1));
-    EXPECT_EQ("UnknowCategory12", f.getCategoryString((DATA_CATEGORY)12));
+    EXPECT_EQ("UnknowCategory-1", f.getCategoryString((DATA_CATEGORY) -1));
+    EXPECT_EQ("UnknowCategory12", f.getCategoryString((DATA_CATEGORY) 12));
 }
 
-TEST_F(MarshallTest, StringSerialize){
+TEST_F(MarshallTest, StringSerialize) {
     ConstantSP str = Util::createString("1234567890");
     char buf1[20]{};
     char buf2[20]{};
@@ -1030,22 +1031,22 @@ TEST_F(MarshallTest, StringSerialize){
     EXPECT_EQ(-1, int128->serialize(buf3, 6, 0, 20, numElement, partial));
     EXPECT_EQ(6, int128->serialize(buf3, 6, 0, 0, numElement, partial));
     EXPECT_FALSE(int128->getBinary(0, 0, 20, nullptr));
-    unsigned char* data = new unsigned char[32]{};
+    unsigned char *data = new unsigned char[32]{};
     ConstantSP int128Vec = Util::createVector(DT_INT128, 1, 1, true, 0, data);
     int128Vec->setString(0, "");
     EXPECT_ANY_THROW(int128Vec->setString(0, "0z123456789012345678901234567890"));
 
-    ConstantSP dou1 = Util::createDouble(0.0/0.0);
+    ConstantSP dou1 = Util::createDouble(0.0 / 0.0);
     std::cout << dou1->getString() << std::endl;
     ConstantSP dou2 = Util::createDouble(INFINITY);
     std::cout << dou2->getString() << std::endl;
-    ConstantSP flo1 = Util::createFloat(0.0/0.0);
+    ConstantSP flo1 = Util::createFloat(0.0 / 0.0);
     std::cout << flo1->getString() << std::endl;
     ConstantSP flo2 = Util::createFloat(INFINITY);
     std::cout << flo2->getString() << std::endl;
 }
 
-TEST_F(MarshallTest, IPParser){
+TEST_F(MarshallTest, IPParser) {
     ConstantFactory f;
     EXPECT_EQ(nullptr, f.parseConstant(DT_IP, "12.1.1.1.1"));
     EXPECT_EQ(nullptr, f.parseConstant(DT_IP, "-12.1.1.1.1"));
@@ -1091,10 +1092,10 @@ TEST_F(MarshallTest, IPParser){
     }
     {
         TryRWLockGuard<RWLock> lock4(&l, true, false);
-    } 
+    }
 }
 
-TEST_F(MarshallTest, BoundedBlockingQueue_test){
+TEST_F(MarshallTest, BoundedBlockingQueue_test) {
     BoundedBlockingQueue<int> queue(100);
     queue.push(1314);
     int result = 0;

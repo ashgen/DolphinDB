@@ -1,38 +1,31 @@
-namespace STPCT
-{
-    class StreamingThreadPooledClientTester : public testing::Test, public ::testing::WithParamInterface<int>
-    {
+namespace STPCT {
+    class StreamingThreadPooledClientTester : public testing::Test, public ::testing::WithParamInterface<int> {
     public:
         // Suite
-        static void SetUpTestCase()
-        {
+        static void SetUpTestCase() {
             // DBConnection conn;
 
             conn.initialize();
             bool ret = conn.connect(hostName, port, "admin", "123456");
-            if (!ret)
-            {
+            if (!ret) {
                 cout << "Failed to connect to the server" << endl;
-            }
-            else
-            {
+            } else {
                 cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
                 isNewVersion = conn.run("flag = 1;v = split(version(), ' ')[0];\
                                 tmp=int(v.split('.'));\
                                 if((tmp[0]==2 && tmp[1]==00 && tmp[2]>=9 )||(tmp[0]==2 && tmp[1]==10)){flag=1;}else{flag=0};\
                                 flag")
-                                   ->getBool();
+                        ->getBool();
             }
         }
-        static void TearDownTestCase()
-        {
+
+        static void TearDownTestCase() {
             usedPorts.clear();
             conn.close();
         }
 
         // Case
-        virtual void SetUp()
-        {
+        virtual void SetUp() {
             cout << "check connect...";
             ConstantSP res = conn.run("1+1");
 
@@ -43,14 +36,13 @@ namespace STPCT
                                      "try{ dropStreamTable(`arrayVectorTable);}catch(ex){};";
             conn.run(del_streamtable);
         }
-        virtual void TearDown()
-        {
+
+        virtual void TearDown() {
             conn.run("undef all;");
         }
     };
 
-    static void createSharedTableAndReplay(int rows)
-    {
+    static void createSharedTableAndReplay(int rows) {
         string script = "login(\"admin\",\"123456\")\n\
                 st1 = streamTable(100:0, `datetimev`timestampv`sym`price1`price2, [DATETIME, TIMESTAMP, SYMBOL, DOUBLE, DOUBLE])\n\
                 enableTableShareAndPersistence(table=st1, tableName=`outTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -64,8 +56,7 @@ namespace STPCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withAllDataType()
-    {
+    static void createSharedTableAndReplay_withAllDataType() {
         srand(time(NULL));
         int scale32 = rand() % 9;
         int scale64 = rand() % 18;
@@ -88,8 +79,7 @@ namespace STPCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withArrayVector()
-    {
+    static void createSharedTableAndReplay_withArrayVector() {
         string replayScript = "colName =  `ts`cbool`cchar`cshort`cint`clong`cdate`cmonth`ctime`cminute`csecond`cdatetime`ctimestamp`cnanotime`cnanotimestamp`cfloat`cdouble`cipaddr`cuuid`cint128;"
                               "colType = [TIMESTAMP,BOOL[], CHAR[], SHORT[], INT[],LONG[], DATE[], MONTH[], TIME[], MINUTE[], SECOND[], DATETIME[], TIMESTAMP[], NANOTIME[], NANOTIMESTAMP[], FLOAT[], DOUBLE[], IPADDR[], UUID[], INT128[]];"
                               "st1 = streamTable(100:0,colName, colType);"
@@ -108,8 +98,7 @@ namespace STPCT
         conn.run(replayScript);
     }
 
-    void StopCurNode(string cur_node)
-    {
+    void StopCurNode(string cur_node) {
         DBConnection conn1(false, false);
         conn1.connect(hostName, ctl_port, "admin", "123456");
 
@@ -118,31 +107,26 @@ namespace STPCT
         // std::this_thread::sleep_for(std::chrono::seconds(5));
         // std::this_thread::yield();
         conn1.run("try{startDataNode(\"" + cur_node + "\")}catch(ex){};");
-        if (conn1.run("(exec state from getClusterPerf() where name = `" + cur_node + ")[0]")->getInt() == 1)
-        {
+        if (conn1.run("(exec state from getClusterPerf() where name = `" + cur_node + ")[0]")->getInt() == 1) {
             cout << "restart the datanode: " + cur_node + " successfully..." << endl;
             conn1.close();
             return;
-        }
-        else
-        {
+        } else {
             cout << "restart datanode failed." << endl;
         }
     }
     INSTANTIATE_TEST_CASE_P(StreamingReverse, StreamingThreadPooledClientTester, testing::Values(0, rand() % 1000 + 13000));
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_1)
-    {
+    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_1
+    ) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+    auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+        if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -151,12 +135,12 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 1);
-        if (!isNewVersion && listenport == 0)
-        {
+    if (!
+    isNewVersion &&listenport
+    == 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+}
+else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 1);
 
@@ -168,27 +152,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_2)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_2
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -197,12 +180,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 2);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 2);
 
@@ -214,27 +196,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_4)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_4
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -243,12 +224,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 4);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 4);
 
@@ -260,27 +240,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_8)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_8
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -289,12 +268,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 8);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 8);
 
@@ -306,27 +284,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_16)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_16
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -335,12 +312,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 16);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 16);
 
@@ -352,27 +328,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_32)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_32
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -381,12 +356,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 32);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 32);
 
@@ -398,21 +372,21 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_hostNull)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_hostNull
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -428,13 +402,12 @@ namespace STPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_portNull)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_portNull
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -450,19 +423,17 @@ namespace STPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_actionNameNull)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_actionNameNull
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -472,12 +443,11 @@ namespace STPCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadPooledClient client(listenport, 2);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "", 0);
             notify.wait();
             TableSP stat = conn.run("getStreamingStat().pubTables");
@@ -493,21 +463,21 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_tableNameNull)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_tableNameNull
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             cout << msg->getString() << endl;
         };
@@ -519,13 +489,12 @@ namespace STPCT
         EXPECT_ANY_THROW(auto threadVec = client.subscribe(hostName, port, onehandler, "", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_offsetNegative)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_offsetNegative
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -534,12 +503,11 @@ namespace STPCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadPooledClient client(listenport, 2);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", -1));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", -1);
             cout << "total size:" << msg_total << endl;
             client.unsubscribe(hostName, port, "outTables", "actionTest");
@@ -548,27 +516,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 0);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_filter)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_filter
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total > 0)
-            {
+    if (msg_total > 0) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -580,12 +547,11 @@ namespace STPCT
         ThreadPooledClient client(listenport, 2);
         VectorSP filter = Util::createVector(DT_SYMBOL, 1, 1);
         filter->setString(0, "b");
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, filter));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, filter);
             cout << "total size:" << msg_total << endl;
             notify.wait();
@@ -596,28 +562,27 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total > 0, true);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_msgAsTable)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_msgAsTable
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             EXPECT_EQ(msg->getForm(), 6);
             msg_total += msg->rows();
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -626,12 +591,11 @@ namespace STPCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadPooledClient client(listenport, 2);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, true));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, true);
             notify.wait();
             cout << "total size:" << msg_total << endl;
@@ -641,27 +605,26 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_allowExists)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_onehandler_allowExists
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -671,12 +634,11 @@ namespace STPCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadPooledClient client(listenport, 2);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, false, true));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, false, true);
             notify.wait();
             cout << "total size:" << msg_total << endl;
@@ -686,20 +648,20 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_resub_false)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_resub_false
+) {
         // STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -711,12 +673,11 @@ namespace STPCT
         EXPECT_ANY_THROW(auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_resub_true)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_resub_true
+) {
         // STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
         };
 
@@ -724,12 +685,11 @@ namespace STPCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadPooledClient client(listenport, 1);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true);
             Util::sleep(5000);
             client.unsubscribe(hostName, port, "outTables", "actionTest");
@@ -738,20 +698,18 @@ namespace STPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_subscribe_twice)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_subscribe_twice
+) {
         STPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
 
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -761,12 +719,11 @@ namespace STPCT
 
         int threadCount = rand() % 10 + 1;
         ThreadPooledClient client(listenport, threadCount);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false);
             EXPECT_ANY_THROW(auto threadVec1 = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false));
             EXPECT_EQ(threadVec.size(), threadCount);
@@ -779,16 +736,17 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_withAllDataType)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_withAllDataType
+) {
         STPCT::createSharedTableAndReplay_withAllDataType();
         int msg_total = 0;
 
@@ -798,8 +756,7 @@ namespace STPCT
         TableSP ex_table = conn.run("select * from outTables");
         int index = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
 
@@ -812,8 +769,7 @@ namespace STPCT
 
             index++;
 
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -823,12 +779,11 @@ namespace STPCT
 
         int threadCount = rand() % 10 + 1;
         ThreadPooledClient client(listenport, threadCount);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), threadCount);
 
@@ -840,16 +795,17 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_arrayVector)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_client_threadCount_arrayVector
+) {
         STPCT::createSharedTableAndReplay_withArrayVector();
         int msg_total = 0;
 
@@ -857,16 +813,13 @@ namespace STPCT
         Mutex mutex;
 
         TableSP ex_tab = conn.run("select * from arrayVectorTable");
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
-            for (auto i = 1; i < msg->size(); i++)
-            {
+    for (auto i = 1; i < msg->size(); i++) {
                 // EXPECT_EQ(ex_tab->getColumn(i)->getType(), msg->get(i)->getType());
                 EXPECT_EQ(msg->get(i)->getForm(), DF_VECTOR);
             }
@@ -877,12 +830,11 @@ namespace STPCT
 
         int threadCount = rand() % 10 + 1;
         ThreadPooledClient client(listenport, threadCount);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "arrayVectorTable", "arrayVectorTableTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "arrayVectorTable", "arrayVectorTableTest", 0);
             EXPECT_EQ(threadVec.size(), threadCount);
 
@@ -894,29 +846,28 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`arrayVectorTable) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_hugetable)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_hugetable
+) {
         STPCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             if (msg_total % 100000 == 0)
                 cout << "now subscribed rows: " << msg_total << endl;
-            if (msg_total == 1000000)
-            {
+    if (msg_total == 1000000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -925,12 +876,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 4);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             EXPECT_EQ(threadVec.size(), 4);
 
@@ -942,30 +892,29 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadPooledClientTester, test_subscribe_hugetable_msgAsTable)
-    {
+TEST_P(StreamingThreadPooledClientTester, test_subscribe_hugetable_msgAsTable
+) {
         STPCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
 
         Signal notify;
         Mutex mutex;
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             EXPECT_EQ(msg->getForm(), DF_TABLE);
             msg_total += msg->rows();
             if (msg_total % 100000 == 0)
                 cout << "now subscribed rows: " << msg_total << endl;
-            if (msg_total == 1000000)
-            {
+    if (msg_total == 1000000) {
                 notify.set();
             }
             // cout << msg->getString() << endl;
@@ -974,12 +923,11 @@ namespace STPCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadPooledClient client(listenport, 4);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false, nullptr, true));
-        }
-        else
-        {
+} else {
             auto threadVec = client.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false, nullptr, true);
             EXPECT_EQ(threadVec.size(), 4);
 
@@ -991,11 +939,12 @@ namespace STPCT
             EXPECT_TRUE(conn.run("(exec count(*) from getStreamingStat()[`pubConns] where tables =`outTables) ==0")->getBool());
 
             EXPECT_EQ(msg_total, 1000000);
-            for (auto &t : threadVec)
-            {
+for (
+auto &t
+: threadVec) {
                 EXPECT_EQ(client.getQueueDepth(t), 0);
             }
         }
         usedPorts.push_back(listenport);
     }
-}
+}// namespace STPCT

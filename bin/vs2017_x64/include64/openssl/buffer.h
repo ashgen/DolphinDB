@@ -57,27 +57,27 @@
  */
 
 #ifndef HEADER_BUFFER_H
-# define HEADER_BUFFER_H
+#define HEADER_BUFFER_H
 
-# include <openssl/ossl_typ.h>
+#include <openssl/ossl_typ.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-# include <stddef.h>
+#include <stddef.h>
 
-# if !defined(NO_SYS_TYPES_H)
-#  include <sys/types.h>
-# endif
+#if !defined(NO_SYS_TYPES_H)
+#include <sys/types.h>
+#endif
 
 /* Already declared in ossl_typ.h */
 /* typedef struct buf_mem_st BUF_MEM; */
 
 struct buf_mem_st {
-    size_t length;              /* current number of bytes */
+    size_t length; /* current number of bytes */
     char *data;
-    size_t max;                 /* size of buffer */
+    size_t max; /* size of buffer */
 };
 
 BUF_MEM *BUF_MEM_new(void);
@@ -110,16 +110,16 @@ void ERR_load_BUF_strings(void);
 /* Error codes for the BUF functions. */
 
 /* Function codes. */
-# define BUF_F_BUF_MEMDUP                                 103
-# define BUF_F_BUF_MEM_GROW                               100
-# define BUF_F_BUF_MEM_GROW_CLEAN                         105
-# define BUF_F_BUF_MEM_NEW                                101
-# define BUF_F_BUF_STRDUP                                 102
-# define BUF_F_BUF_STRNDUP                                104
+#define BUF_F_BUF_MEMDUP 103
+#define BUF_F_BUF_MEM_GROW 100
+#define BUF_F_BUF_MEM_GROW_CLEAN 105
+#define BUF_F_BUF_MEM_NEW 101
+#define BUF_F_BUF_STRDUP 102
+#define BUF_F_BUF_STRNDUP 104
 
 /* Reason codes. */
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

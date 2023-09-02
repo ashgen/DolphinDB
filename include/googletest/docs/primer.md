@@ -1,6 +1,5 @@
 # Googletest Primer
 
-
 ## Introduction: Why googletest?
 
 *googletest* helps you write better C++ tests.
@@ -13,33 +12,33 @@ supports *any* kind of tests, not just unit tests.
 
 So what makes a good test, and how does googletest fit in? We believe:
 
-1.  Tests should be *independent* and *repeatable*. It's a pain to debug a test
-    that succeeds or fails as a result of other tests. googletest isolates the
-    tests by running each of them on a different object. When a test fails,
-    googletest allows you to run it in isolation for quick debugging.
-1.  Tests should be well *organized* and reflect the structure of the tested
-    code. googletest groups related tests into test cases that can share data
-    and subroutines. This common pattern is easy to recognize and makes tests
-    easy to maintain. Such consistency is especially helpful when people switch
-    projects and start to work on a new code base.
-1.  Tests should be *portable* and *reusable*. Google has a lot of code that is
-    platform-neutral, its tests should also be platform-neutral. googletest
-    works on different OSes, with different compilers (gcc, icc, and MSVC), with
-    or without exceptions, so googletest tests can easily work with a variety of
-    configurations.
-1.  When tests fail, they should provide as much *information* about the problem
-    as possible. googletest doesn't stop at the first test failure. Instead, it
-    only stops the current test and continues with the next. You can also set up
-    tests that report non-fatal failures after which the current test continues.
-    Thus, you can detect and fix multiple bugs in a single run-edit-compile
-    cycle.
-1.  The testing framework should liberate test writers from housekeeping chores
-    and let them focus on the test *content*. googletest automatically keeps
-    track of all tests defined, and doesn't require the user to enumerate them
-    in order to run them.
-1.  Tests should be *fast*. With googletest, you can reuse shared resources
-    across tests and pay for the set-up/tear-down only once, without making
-    tests depend on each other.
+1. Tests should be *independent* and *repeatable*. It's a pain to debug a test
+   that succeeds or fails as a result of other tests. googletest isolates the
+   tests by running each of them on a different object. When a test fails,
+   googletest allows you to run it in isolation for quick debugging.
+1. Tests should be well *organized* and reflect the structure of the tested
+   code. googletest groups related tests into test cases that can share data
+   and subroutines. This common pattern is easy to recognize and makes tests
+   easy to maintain. Such consistency is especially helpful when people switch
+   projects and start to work on a new code base.
+1. Tests should be *portable* and *reusable*. Google has a lot of code that is
+   platform-neutral, its tests should also be platform-neutral. googletest
+   works on different OSes, with different compilers (gcc, icc, and MSVC), with
+   or without exceptions, so googletest tests can easily work with a variety of
+   configurations.
+1. When tests fail, they should provide as much *information* about the problem
+   as possible. googletest doesn't stop at the first test failure. Instead, it
+   only stops the current test and continues with the next. You can also set up
+   tests that report non-fatal failures after which the current test continues.
+   Thus, you can detect and fix multiple bugs in a single run-edit-compile
+   cycle.
+1. The testing framework should liberate test writers from housekeeping chores
+   and let them focus on the test *content*. googletest automatically keeps
+   track of all tests defined, and doesn't require the user to enumerate them
+   in order to run them.
+1. Tests should be *fast*. With googletest, you can reuse shared resources
+   across tests and pay for the set-up/tear-down only once, without making
+   tests depend on each other.
 
 Since googletest is based on the popular xUnit architecture, you'll feel right
 at home if you've used JUnit or PyUnit before. If not, it will take you about 10
@@ -72,10 +71,10 @@ part of the public API at various places.
 So for the time being, please be aware of the different definitions of
 the terms:
 
-Meaning                                                                              | googletest Term                                                                                            | [ISTQB](http://www.istqb.org/) Term
-:----------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- | :----------------------------------
-Exercise a particular program path with specific input values and verify the results | [TEST()](#simple-tests)                                                                                    | [Test Case](http://glossary.istqb.org/search/test%20case)
-A set of several tests related to one component                                      | [TestCase](#basic-concepts) | [TestSuite](http://glossary.istqb.org/search/test%20suite)
+ Meaning                                                                              | googletest Term             | [ISTQB](http://www.istqb.org/) Term                        
+:-------------------------------------------------------------------------------------|:----------------------------|:-----------------------------------------------------------
+ Exercise a particular program path with specific input values and verify the results | [TEST()](#simple-tests)     | [Test Case](http://glossary.istqb.org/search/test%20case)  
+ A set of several tests related to one component                                      | [TestCase](#basic-concepts) | [TestSuite](http://glossary.istqb.org/search/test%20suite) 
 
 ## Basic Concepts
 
@@ -138,10 +137,10 @@ streamed to an assertion, it will be translated to UTF-8 when printed.
 
 These assertions do basic true/false condition testing.
 
-Fatal assertion            | Nonfatal assertion         | Verifies
--------------------------- | -------------------------- | --------------------
-`ASSERT_TRUE(condition);`  | `EXPECT_TRUE(condition);`  | `condition` is true
-`ASSERT_FALSE(condition);` | `EXPECT_FALSE(condition);` | `condition` is false
+ Fatal assertion            | Nonfatal assertion         | Verifies             
+----------------------------|----------------------------|----------------------
+ `ASSERT_TRUE(condition);`  | `EXPECT_TRUE(condition);`  | `condition` is true  
+ `ASSERT_FALSE(condition);` | `EXPECT_FALSE(condition);` | `condition` is false 
 
 Remember, when they fail, `ASSERT_*` yields a fatal failure and returns from the
 current function, while `EXPECT_*` yields a nonfatal failure, allowing the
@@ -154,14 +153,14 @@ containing test fails.
 
 This section describes assertions that compare two values.
 
-Fatal assertion          | Nonfatal assertion       | Verifies
------------------------- | ------------------------ | --------------
-`ASSERT_EQ(val1, val2);` | `EXPECT_EQ(val1, val2);` | `val1 == val2`
-`ASSERT_NE(val1, val2);` | `EXPECT_NE(val1, val2);` | `val1 != val2`
-`ASSERT_LT(val1, val2);` | `EXPECT_LT(val1, val2);` | `val1 < val2`
-`ASSERT_LE(val1, val2);` | `EXPECT_LE(val1, val2);` | `val1 <= val2`
-`ASSERT_GT(val1, val2);` | `EXPECT_GT(val1, val2);` | `val1 > val2`
-`ASSERT_GE(val1, val2);` | `EXPECT_GE(val1, val2);` | `val1 >= val2`
+ Fatal assertion          | Nonfatal assertion       | Verifies       
+--------------------------|--------------------------|----------------
+ `ASSERT_EQ(val1, val2);` | `EXPECT_EQ(val1, val2);` | `val1 == val2` 
+ `ASSERT_NE(val1, val2);` | `EXPECT_NE(val1, val2);` | `val1 != val2` 
+ `ASSERT_LT(val1, val2);` | `EXPECT_LT(val1, val2);` | `val1 < val2`  
+ `ASSERT_LE(val1, val2);` | `EXPECT_LE(val1, val2);` | `val1 <= val2` 
+ `ASSERT_GT(val1, val2);` | `EXPECT_GT(val1, val2);` | `val1 > val2`  
+ `ASSERT_GE(val1, val2);` | `EXPECT_GE(val1, val2);` | `val1 >= val2` 
 
 Value arguments must be comparable by the assertion's comparison operator or
 you'll get a compiler error. We used to require the arguments to support the
@@ -198,7 +197,8 @@ objects, you should use `ASSERT_EQ`.
 
 When doing pointer comparisons use `*_EQ(ptr, nullptr)` and `*_NE(ptr, nullptr)`
 instead of `*_EQ(ptr, NULL)` and `*_NE(ptr, NULL)`. This is because `nullptr` is
-typed while `NULL` is not. See [FAQ](faq.md#why-does-google-test-support-expect_eqnull-ptr-and-assert_eqnull-ptr-but-not-expect_nenull-ptr-and-assert_nenull-ptr)
+typed while `NULL` is not.
+See [FAQ](faq.md#why-does-google-test-support-expect_eqnull-ptr-and-assert_eqnull-ptr-but-not-expect_nenull-ptr-and-assert_nenull-ptr)
 for more details.
 
 If you're working with floating point numbers, you may want to use the floating
@@ -220,7 +220,7 @@ The assertions in this group compare two **C strings**. If you want to compare
 two `string` objects, use `EXPECT_EQ`, `EXPECT_NE`, and etc instead.
 
 | Fatal assertion                 | Nonfatal assertion              | Verifies                                                 |
-| ------------------------------- | ------------------------------- | -------------------------------------------------------- |
+|---------------------------------|---------------------------------|----------------------------------------------------------|
 | `ASSERT_STREQ(str1, str2);`     | `EXPECT_STREQ(str1, str2);`     | the two C strings have the same content                  |
 | `ASSERT_STRNE(str1, str2);`     | `EXPECT_STRNE(str1, str2);`     | the two C strings have different contents                |
 | `ASSERT_STRCASEEQ(str1, str2);` | `EXPECT_STRCASEEQ(str1, str2);` | the two C strings have the same content, ignoring case   |
@@ -243,13 +243,13 @@ in the Advanced googletest Guide.
 
 To create a test:
 
-1.  Use the `TEST()` macro to define and name a test function, These are
-    ordinary C++ functions that don't return a value.
-1.  In this function, along with any valid C++ statements you want to include,
-    use the various googletest assertions to check values.
-1.  The test's result is determined by the assertions; if any assertion in the
-    test fails (either fatally or non-fatally), or if the test crashes, the
-    entire test fails. Otherwise, it succeeds.
+1. Use the `TEST()` macro to define and name a test function, These are
+   ordinary C++ functions that don't return a value.
+1. In this function, along with any valid C++ statements you want to include,
+   use the various googletest assertions to check values.
+1. The test's result is determined by the assertions; if any assertion in the
+   test fails (either fatally or non-fatally), or if the test crashes, the
+   entire test fails. Otherwise, it succeeds.
 
 ```c++
 TEST(TestCaseName, TestName) {
@@ -307,18 +307,18 @@ objects for several different tests.
 
 To create a fixture:
 
-1.  Derive a class from `::testing::Test` . Start its body with `protected:` as
-    we'll want to access fixture members from sub-classes.
-1.  Inside the class, declare any objects you plan to use.
-1.  If necessary, write a default constructor or `SetUp()` function to prepare
-    the objects for each test. A common mistake is to spell `SetUp()` as
-    **`Setup()`** with a small `u` - Use `override` in C++11 to make sure you
-    spelled it correctly
-1.  If necessary, write a destructor or `TearDown()` function to release any
-    resources you allocated in `SetUp()` . To learn when you should use the
-    constructor/destructor and when you should use `SetUp()/TearDown()`, read
-    this [FAQ](faq.md#should-i-use-the-constructordestructor-of-the-test-fixture-or-setupteardown) entry.
-1.  If needed, define subroutines for your tests to share.
+1. Derive a class from `::testing::Test` . Start its body with `protected:` as
+   we'll want to access fixture members from sub-classes.
+1. Inside the class, declare any objects you plan to use.
+1. If necessary, write a default constructor or `SetUp()` function to prepare
+   the objects for each test. A common mistake is to spell `SetUp()` as
+   **`Setup()`** with a small `u` - Use `override` in C++11 to make sure you
+   spelled it correctly
+1. If necessary, write a destructor or `TearDown()` function to release any
+   resources you allocated in `SetUp()` . To learn when you should use the
+   constructor/destructor and when you should use `SetUp()/TearDown()`, read
+   this [FAQ](faq.md#should-i-use-the-constructordestructor-of-the-test-fixture-or-setupteardown) entry.
+1. If needed, define subroutines for your tests to share.
 
 When using a fixture, use `TEST_F()` instead of `TEST()` as it allows you to
 access objects and subroutines in the test fixture:
@@ -421,16 +421,15 @@ would lead to a segfault when `n` is `NULL`.
 
 When these tests run, the following happens:
 
-1.  googletest constructs a `QueueTest` object (let's call it `t1` ).
-1.  `t1.SetUp()` initializes `t1` .
-1.  The first test ( `IsEmptyInitially` ) runs on `t1` .
-1.  `t1.TearDown()` cleans up after the test finishes.
-1.  `t1` is destructed.
-1.  The above steps are repeated on another `QueueTest` object, this time
-    running the `DequeueWorks` test.
+1. googletest constructs a `QueueTest` object (let's call it `t1` ).
+1. `t1.SetUp()` initializes `t1` .
+1. The first test ( `IsEmptyInitially` ) runs on `t1` .
+1. `t1.TearDown()` cleans up after the test finishes.
+1. `t1` is destructed.
+1. The above steps are repeated on another `QueueTest` object, this time
+   running the `DequeueWorks` test.
 
 **Availability**: Linux, Windows, Mac.
-
 
 ## Invoking the Tests
 
@@ -447,19 +446,19 @@ When invoked, the `RUN_ALL_TESTS()` macro:
 
 1. Saves the state of all googletest flags
 
-*   Creates a test fixture object for the first test.
+* Creates a test fixture object for the first test.
 
-*   Initializes it via `SetUp()`.
+* Initializes it via `SetUp()`.
 
-*   Runs the test on the fixture object.
+* Runs the test on the fixture object.
 
-*   Cleans up the fixture via `TearDown()`.
+* Cleans up the fixture via `TearDown()`.
 
-*   Deletes the fixture.
+* Deletes the fixture.
 
 * Restores the state of all googletest flags
 
-*   Repeats the above steps for the next test, until all tests have run.
+* Repeats the above steps for the next test, until all tests have run.
 
 If a fatal failure happens the subsequent steps will be skipped.
 
@@ -540,7 +539,6 @@ int main(int argc, char **argv) {
 }
 ```
 
-
 The `::testing::InitGoogleTest()` function parses the command line for
 googletest flags, and removes all recognized flags. This allows the user to
 control a test program's behavior via various flags, which we'll cover in
@@ -557,13 +555,12 @@ gtest\_main library and you are good to go.
 
 NOTE: `ParseGUnitFlags()` is deprecated in favor of `InitGoogleTest()`.
 
-
 ## Known Limitations
 
-*   Google Test is designed to be thread-safe. The implementation is thread-safe
-    on systems where the `pthreads` library is available. It is currently
-    _unsafe_ to use Google Test assertions from two threads concurrently on
-    other systems (e.g. Windows). In most tests this is not an issue as usually
-    the assertions are done in the main thread. If you want to help, you can
-    volunteer to implement the necessary synchronization primitives in
-    `gtest-port.h` for your platform.
+* Google Test is designed to be thread-safe. The implementation is thread-safe
+  on systems where the `pthreads` library is available. It is currently
+  _unsafe_ to use Google Test assertions from two threads concurrently on
+  other systems (e.g. Windows). In most tests this is not an issue as usually
+  the assertions are done in the main thread. If you want to help, you can
+  volunteer to implement the necessary synchronization primitives in
+  `gtest-port.h` for your platform.

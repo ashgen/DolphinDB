@@ -1,5 +1,4 @@
-class HightlyConcurrentConnTest:public testing::Test
-{
+class HightlyConcurrentConnTest : public testing::Test {
 protected:
     //Suite
     static void SetUpTestCase() {
@@ -8,10 +7,9 @@ protected:
         bool ret = conn_compress.connect(hostName, port, "admin", "123456");
         if (!ret) {
             cout << "Failed to connect to the server" << endl;
-        }
-        else {
+        } else {
             conn_compress.initialize();
-            cout << "connect to " + hostName + ":" + std::to_string(port)<< endl;
+            cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
             string script1 = "login(`admin,`123456)\n\
                     if (existsDatabase(\"dfs://Quote_test_DB\")) {\
                     dropDatabase(\"dfs://Quote_test_DB\")}\
@@ -41,89 +39,109 @@ protected:
                     \n\
                     Quote_test.append!(quotess1);\
                     Quote_test.append!(quotess2);";
-        conn_compress.run(script1);
+            conn_compress.run(script1);
         }
     }
-    static void TearDownTestCase(){
+
+    static void TearDownTestCase() {
         conn_compress.close();
     }
 
     //Case
-    virtual void SetUp()
-    {
-        cout<<"check connect...";
-		ConstantSP res = conn_compress.run("1+1");
-		if(!(res->getBool())){
-			cout<<"Server not responed, please check."<<endl;
-		}
-		else
-		{
-			cout<<"ok"<<endl;
-		}
+    virtual void SetUp() {
+        cout << "check connect...";
+        ConstantSP res = conn_compress.run("1+1");
+        if (!(res->getBool())) {
+            cout << "Server not responed, please check." << endl;
+        } else {
+            cout << "ok" << endl;
+        }
     }
-    virtual void TearDown()
-    {
+
+    virtual void TearDown() {
         pass;
     }
 };
 
-void job(int id){
-	//DBConnection conn(false,false);  // 出错
-	DBConnection conn_withKeepAliveTime(false,false,7200);
-	bool ret = conn_withKeepAliveTime.connect(hostName, port, "admin", "123456");
-	if(!ret){
-        cout<<"Failed to connect to the server"<<endl;
+void job(int id) {
+    //DBConnection conn(false,false);  // 出错
+    DBConnection conn_withKeepAliveTime(false, false, 7200);
+    bool ret = conn_withKeepAliveTime.connect(hostName, port, "admin", "123456");
+    if (!ret) {
+        cout << "Failed to connect to the server" << endl;
         return;
     }
-    string tb1="tb"+to_string(id);
-    string script1 = tb1+"=select * from Quote_test;rows("+tb1+")";
-	
+    string tb1 = "tb" + to_string(id);
+    string script1 = tb1 + "=select * from Quote_test;rows(" + tb1 + ")";
+
     ConstantSP re = conn_withKeepAliveTime.run("Quote_test=loadTable('dfs://Quote_test_DB',`Quote_test)");
     ConstantSP row1 = conn_withKeepAliveTime.run(script1);
     conn_withKeepAliveTime.close();
 
-    EXPECT_EQ(row1->getInt(),2200);
+    EXPECT_EQ(row1->getInt(), 2200);
 }
 
-void job2(int id){
-	DBConnection conn_withDefaultKeepAliveTime(false,false);
-	bool ret = conn_withDefaultKeepAliveTime.connect(hostName, port, "admin", "123456");
-	if(!ret){
-        cout<<"Failed to connect to the server"<<endl;
+void job2(int id) {
+    DBConnection conn_withDefaultKeepAliveTime(false, false);
+    bool ret = conn_withDefaultKeepAliveTime.connect(hostName, port, "admin", "123456");
+    if (!ret) {
+        cout << "Failed to connect to the server" << endl;
         return;
     }
-    string tb2="tb"+to_string(id);
-    string script2 = tb2+"=select * from Quote_test;rows("+tb2+")";
+    string tb2 = "tb" + to_string(id);
+    string script2 = tb2 + "=select * from Quote_test;rows(" + tb2 + ")";
 
-	ConstantSP re = conn_withDefaultKeepAliveTime.run("Quote_test=loadTable('dfs://Quote_test_DB',`Quote_test)");
+    ConstantSP re = conn_withDefaultKeepAliveTime.run("Quote_test=loadTable('dfs://Quote_test_DB',`Quote_test)");
     ConstantSP row2 = conn_withDefaultKeepAliveTime.run(script2);
     conn_withDefaultKeepAliveTime.close();
 
-    EXPECT_EQ(row2->getInt(),2200);    
+    EXPECT_EQ(row2->getInt(), 2200);
 }
 
-TEST_F(HightlyConcurrentConnTest,test_HightlyConcurrentConnWithKeepAliveTime) {
-	std::thread th[500];
-    int sum=0;
-	for (int i = 0; i < 500; i++){
-		th[i] = std::thread(job, i);
-	}
-	for (int i = 0; i < 500; i++){
-		th[i].join();
-        sum+=1;
-	}
-    EXPECT_EQ(sum,500);
+TEST_F(HightlyConcurrentConnTest, test_HightlyConcurrentConnWithKeepAliveTime
+) {
+std::thread th[500];
+int sum = 0;
+for (
+int i = 0;
+i < 500; i++) {
+th[i] =
+std::thread(job, i
+);
+}
+for (
+int i = 0;
+i < 500; i++) {
+th[i].
+
+join();
+
+sum += 1;
+}
+EXPECT_EQ(sum,
+500);
 }
 
-TEST_F(HightlyConcurrentConnTest,test_HightlyConcurrentConnWithDefaultKeepAliveTime) {
-	std::thread th[500];
-    int sum=0;
-	for (int i = 0; i < 500; i++){
-		th[i] = std::thread(job2, i);
-	}
-	for (int i = 0; i < 500; i++){
-		th[i].join();
-        sum+=1;
-	}
-    EXPECT_EQ(sum,500);
+TEST_F(HightlyConcurrentConnTest, test_HightlyConcurrentConnWithDefaultKeepAliveTime
+) {
+std::thread th[500];
+int sum = 0;
+for (
+int i = 0;
+i < 500; i++) {
+th[i] =
+std::thread(job2, i
+);
+}
+for (
+int i = 0;
+i < 500; i++) {
+th[i].
+
+join();
+
+sum += 1;
+}
+EXPECT_EQ(sum,
+500);
 }

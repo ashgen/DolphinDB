@@ -1,32 +1,26 @@
-class IPCinMemoryTableTest : public testing::Test
-{
+class IPCinMemoryTableTest : public testing::Test {
 protected:
     // Suite
-    static void SetUpTestCase()
-    {
+    static void SetUpTestCase() {
         // DBConnection conn;
 
         bool ret = conn.connect(hostName, port, "admin", "123456");
-        if (!ret)
-        {
+        if (!ret) {
             cout << "Failed to connect to the server" << endl;
-        }
-        else
-        {
+        } else {
             conn.initialize();
             cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
         }
     }
-    static void TearDownTestCase()
-    {
+
+    static void TearDownTestCase() {
         conn.run("try{unsubscribeTable(tableName=\"pubTable\", actionName=\"act3\")}catch(ex){};\
                     try{undef(`pubTable,SHARED);}catch(ex){};try{dropIPCInMemoryTable(`pubTable);}catch(ex){};");
         conn.close();
     }
 
     // Case
-    virtual void SetUp()
-    {
+    virtual void SetUp() {
         cout << "check connect...";
         ConstantSP res = conn.run("1+1");
 
@@ -38,14 +32,13 @@ protected:
                 def shm_append(msg) {shm_test.append!(msg)};\
                 topic2 = subscribeTable(tableName=\"pubTable\", actionName=\"act3\", offset=0, handler=shm_append, msgAsTable=true)");
     }
-    virtual void TearDown()
-    {
+
+    virtual void TearDown() {
         conn.run("undef all;");
     }
 };
 
-int insertTask(int insertNum, int sleepMS)
-{
+int insertTask(int insertNum, int sleepMS) {
     DBConnection connNew(false, false);
     connNew.connect(hostName, port, "admin", "123456");
     connNew.run("for (i in 1.." + to_string(insertNum) + "){tableInsert(pubTable,rand(1..100,1),norm(2,0.4,1),take(now(true),1));sleep(" + to_string(sleepMS) + ")}");
@@ -54,8 +47,7 @@ int insertTask(int insertNum, int sleepMS)
     return 0;
 }
 
-void print(TableSP table)
-{
+void print(TableSP table) {
     ConstantSP time_spend = conn.run("cur_tm=now(true);insert_total_time = exec max(currenttime) from pubTable;\n\
                                     tm_spend=cur_tm-insert_total_time;\n\
                                     nanotime(tm_spend)");
@@ -64,15 +56,14 @@ void print(TableSP table)
          << endl;
 }
 
-void insertRow(TableSP table)
-{
+void insertRow(TableSP table) {
     AutoFitTableAppender appender("", "t1", conn);
     appender.append(table);
     return;
 }
 
-TEST_F(IPCinMemoryTableTest, test_basic)
-{
+TEST_F(IPCinMemoryTableTest, test_basic
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -91,14 +82,19 @@ TEST_F(IPCinMemoryTableTest, test_basic)
     memTable.unsubscribe(tableName);
     conn.upload("outputTable", {outputTable});
     VectorSP res = conn.run("each(eqObj, outputTable.values(), pubTable.values())");
-    for (auto i = 0; i < res->size(); i++)
-    {
+for (
+auto i = 0;
+i<res->
+
+size();
+
+i++) {
         EXPECT_TRUE(res->get(i)->getBool());
     }
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNullstr)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNullstr
+) {
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
 
@@ -110,8 +106,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNullstr)
     EXPECT_ANY_THROW(ThreadSP thread0 = memTable.subscribe("", nullptr, outputTable, false));
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNotExist)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNotExist
+) {
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
 
@@ -123,8 +119,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_tableNameNotExist)
     EXPECT_ANY_THROW(ThreadSP thread0 = memTable.subscribe("errTableName", nullptr, outputTable, false));
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_handlerNull)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_handlerNull
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -141,16 +137,17 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_handlerNull)
     Util::sleep(2000);
     memTable.unsubscribe(tableName);
     conn.upload("outputTable", {outputTable});
-    for (int i = 0; i < 100; i++)
-    {
+for (
+int i = 0;
+i < 100; i++) {
         EXPECT_EQ(conn.run("pubTable")->getColumn(0)->get(i)->getString(), conn.run("outputTable")->getColumn(0)->get(i)->getString());
         EXPECT_EQ(conn.run("pubTable")->getColumn(1)->get(i)->getString(), conn.run("outputTable")->getColumn(1)->get(i)->getString());
         EXPECT_EQ(conn.run("pubTable")->getColumn(2)->get(i)->getString(), conn.run("outputTable")->getColumn(2)->get(i)->getString());
     }
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableNull)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableNull
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -170,8 +167,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableNull)
     EXPECT_EQ(conn.run("each(eqObj, t1.values(), pubTable.values())")->getString(), "[1,1,1]");
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColType)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColType
+) {
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
 
@@ -183,8 +180,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColType)
     EXPECT_ANY_THROW(ThreadSP thread0 = memTable.subscribe(tableName, nullptr, outputTable, false));
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColNum)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColNum
+) {
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
 
@@ -196,8 +193,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_outputTableErrorColNum)
     EXPECT_ANY_THROW(ThreadSP thread0 = memTable.subscribe(tableName, nullptr, outputTable, false));
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_overwriteTrue)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_overwriteTrue
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -217,8 +214,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_overwriteTrue)
     EXPECT_EQ(conn.run("outputTable.size()")->getInt(), 0);
 }
 
-TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNullstr)
-{
+TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNullstr
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -237,8 +234,8 @@ TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNullstr)
     memTable.unsubscribe(tableName);
 }
 
-TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNotExist)
-{
+TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNotExist
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -257,8 +254,8 @@ TEST_F(IPCinMemoryTableTest, test_unsubscribe_tableNameNotExist)
     memTable.unsubscribe(tableName);
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_twice)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_twice
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -277,8 +274,8 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_twice)
     memTable.unsubscribe(tableName);
 }
 
-TEST_F(IPCinMemoryTableTest, test_unsubscribe_twice)
-{
+TEST_F(IPCinMemoryTableTest, test_unsubscribe_twice
+) {
     thread th1 = thread(insertTask, 10000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -297,8 +294,8 @@ TEST_F(IPCinMemoryTableTest, test_unsubscribe_twice)
     memTable.unsubscribe(tableName);
 }
 
-TEST_F(IPCinMemoryTableTest, test_subscribe_hugetable)
-{
+TEST_F(IPCinMemoryTableTest, test_subscribe_hugetable
+) {
     thread th1 = thread(insertTask, 1000000, 0);
     string tableName = "pubTable";
     IPCInMemoryStreamClient memTable;
@@ -323,8 +320,13 @@ TEST_F(IPCinMemoryTableTest, test_subscribe_hugetable)
     //     EXPECT_EQ(conn.run("pubTable")->getColumn(2)->get(i)->getString(), conn.run("outputTable")->getColumn(2)->get(i)->getString());
     // }
     VectorSP res = conn.run("each(eqObj, outputTable.values(), pubTable.values())");
-    for (auto i = 0; i < res->size(); i++)
-    {
+for (
+auto i = 0;
+i<res->
+
+size();
+
+i++) {
         EXPECT_TRUE(res->get(i)->getBool());
     }
 }

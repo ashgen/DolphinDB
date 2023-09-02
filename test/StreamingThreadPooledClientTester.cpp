@@ -1,10 +1,10 @@
-#include <unistd.h>
+#include "Streaming.h"
+#include "config.h"
 #include <atomic>
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include "Streaming.h"
-#include "config.h"
+#include <unistd.h>
 using namespace std;
 using namespace dolphindb;
 using namespace std::chrono;
@@ -24,7 +24,7 @@ int main() {
         ConstantSP res = msg->get(5);
         //printf("%d",res->size());
         size_t len = res->size();
-        for (int i=0; i<len; i++){
+        for (int i = 0; i < len; i++) {
             ConstantSP row = res->getRow(i);
             //long long value = row->getLong();
             //Constant* time = Util::createTimestamp(value);
@@ -37,8 +37,8 @@ int main() {
             //string value = row->getString(i);
             //Constant* exchv = Util::createString(value);
             long long value = row->getLong();
-            Constant* x = Util::createLong(value); //收到的数据符合预期
-            cout<<x->getLong()<<endl;
+            Constant *x = Util::createLong(value);//收到的数据符合预期
+            cout << x->getLong() << endl;
         }
 
         if (cnt == 0) then = system_clock::now();
@@ -59,18 +59,18 @@ int main() {
     int listenport = rand() % 8000 + 1025;
     ThreadPooledClient client(listenport, 10);
 
-//    while (true) {
-        auto vec = client.subscribe(hostName, port, handler, table, DEFAULT_ACTION_NAME, 0);
-        //auto vec = client.subscribe(host, port, handler, table1, DEFAULT_ACTION_NAME, 0);//host不存在或者table不存在成功，会显示不存在这个表或无法连接到这个服务器。
-        //auto vec1 = client.subscribe(host, port, handler, table, DEFAULT_ACTION_NAME, 0);//重复订阅没有报错，服务器端仍然只显示1个订阅者
-        sleep(1);
-        client.unsubscribe(hostName, port, table); //反订阅成功
-        for (auto& t : vec) {
-            t->join();
-        }
-        /*for (auto& t : vec1) {
+    //    while (true) {
+    auto vec = client.subscribe(hostName, port, handler, table, DEFAULT_ACTION_NAME, 0);
+    //auto vec = client.subscribe(host, port, handler, table1, DEFAULT_ACTION_NAME, 0);//host不存在或者table不存在成功，会显示不存在这个表或无法连接到这个服务器。
+    //auto vec1 = client.subscribe(host, port, handler, table, DEFAULT_ACTION_NAME, 0);//重复订阅没有报错，服务器端仍然只显示1个订阅者
+    sleep(1);
+    client.unsubscribe(hostName, port, table);//反订阅成功
+    for (auto &t: vec) {
+        t->join();
+    }
+    /*for (auto& t : vec1) {
             t->join();
         }*/
-        cout << "total: " << total << endl;
-   // }
+    cout << "total: " << total << endl;
+    // }
 }

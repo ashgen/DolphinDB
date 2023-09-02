@@ -1,14 +1,13 @@
 # Googletest FAQ
 
-
 ## Why should test case names and test names not contain underscore?
 
 Underscore (`_`) is special, as C++ reserves the following to be used by the
 compiler and the standard library:
 
-1.  any identifier that starts with an `_` followed by an upper-case letter, and
-1.  any identifier that contains two consecutive underscores (i.e. `__`)
-    *anywhere* in its name.
+1. any identifier that starts with an `_` followed by an upper-case letter, and
+1. any identifier that contains two consecutive underscores (i.e. `__`)
+   *anywhere* in its name.
 
 User code is *prohibited* from using such identifiers.
 
@@ -18,15 +17,15 @@ Currently `TEST(TestCaseName, TestName)` generates a class named
 `TestCaseName_TestName_Test`. What happens if `TestCaseName` or `TestName`
 contains `_`?
 
-1.  If `TestCaseName` starts with an `_` followed by an upper-case letter (say,
-    `_Foo`), we end up with `_Foo_TestName_Test`, which is reserved and thus
-    invalid.
-1.  If `TestCaseName` ends with an `_` (say, `Foo_`), we get
-    `Foo__TestName_Test`, which is invalid.
-1.  If `TestName` starts with an `_` (say, `_Bar`), we get
-    `TestCaseName__Bar_Test`, which is invalid.
-1.  If `TestName` ends with an `_` (say, `Bar_`), we get
-    `TestCaseName_Bar__Test`, which is invalid.
+1. If `TestCaseName` starts with an `_` followed by an upper-case letter (say,
+   `_Foo`), we end up with `_Foo_TestName_Test`, which is reserved and thus
+   invalid.
+1. If `TestCaseName` ends with an `_` (say, `Foo_`), we get
+   `Foo__TestName_Test`, which is invalid.
+1. If `TestName` starts with an `_` (say, `_Bar`), we get
+   `TestCaseName__Bar_Test`, which is invalid.
+1. If `TestName` ends with an `_` (say, `Bar_`), we get
+   `TestCaseName_Bar__Test`, which is invalid.
 
 So clearly `TestCaseName` and `TestName` cannot start or end with `_` (Actually,
 `TestCaseName` can start with `_` -- as long as the `_` isn't followed by an
@@ -97,27 +96,27 @@ value-parameterized tests can get it done. It's really up to you the user to
 decide which is more convenient for you, depending on your particular case. Some
 rough guidelines:
 
-*   Typed tests can be easier to write if instances of the different
-    implementations can be created the same way, modulo the type. For example,
-    if all these implementations have a public default constructor (such that
-    you can write `new TypeParam`), or if their factory functions have the same
-    form (e.g. `CreateInstance<TypeParam>()`).
-*   Value-parameterized tests can be easier to write if you need different code
-    patterns to create different implementations' instances, e.g. `new Foo` vs
-    `new Bar(5)`. To accommodate for the differences, you can write factory
-    function wrappers and pass these function pointers to the tests as their
-    parameters.
-*   When a typed test fails, the output includes the name of the type, which can
-    help you quickly identify which implementation is wrong. Value-parameterized
-    tests cannot do this, so there you'll have to look at the iteration number
-    to know which implementation the failure is from, which is less direct.
-*   If you make a mistake writing a typed test, the compiler errors can be
-    harder to digest, as the code is templatized.
-*   When using typed tests, you need to make sure you are testing against the
-    interface type, not the concrete types (in other words, you want to make
-    sure `implicit_cast<MyInterface*>(my_concrete_impl)` works, not just that
-    `my_concrete_impl` works). It's less likely to make mistakes in this area
-    when using value-parameterized tests.
+* Typed tests can be easier to write if instances of the different
+  implementations can be created the same way, modulo the type. For example,
+  if all these implementations have a public default constructor (such that
+  you can write `new TypeParam`), or if their factory functions have the same
+  form (e.g. `CreateInstance<TypeParam>()`).
+* Value-parameterized tests can be easier to write if you need different code
+  patterns to create different implementations' instances, e.g. `new Foo` vs
+  `new Bar(5)`. To accommodate for the differences, you can write factory
+  function wrappers and pass these function pointers to the tests as their
+  parameters.
+* When a typed test fails, the output includes the name of the type, which can
+  help you quickly identify which implementation is wrong. Value-parameterized
+  tests cannot do this, so there you'll have to look at the iteration number
+  to know which implementation the failure is from, which is less direct.
+* If you make a mistake writing a typed test, the compiler errors can be
+  harder to digest, as the code is templatized.
+* When using typed tests, you need to make sure you are testing against the
+  interface type, not the concrete types (in other words, you want to make
+  sure `implicit_cast<MyInterface*>(my_concrete_impl)` works, not just that
+  `my_concrete_impl` works). It's less likely to make mistakes in this area
+  when using value-parameterized tests.
 
 I hope I didn't confuse you more. :-) If you don't mind, I'd suggest you to give
 both approaches a try. Practice is a much better way to grasp the subtle
@@ -318,39 +317,38 @@ When you need to write per-test set-up and tear-down logic, you have the choice
 between using the test fixture constructor/destructor or `SetUp()/TearDown()`.
 The former is usually preferred, as it has the following benefits:
 
-*   By initializing a member variable in the constructor, we have the option to
-    make it `const`, which helps prevent accidental changes to its value and
-    makes the tests more obviously correct.
-*   In case we need to subclass the test fixture class, the subclass'
-    constructor is guaranteed to call the base class' constructor *first*, and
-    the subclass' destructor is guaranteed to call the base class' destructor
-    *afterward*. With `SetUp()/TearDown()`, a subclass may make the mistake of
-    forgetting to call the base class' `SetUp()/TearDown()` or call them at the
-    wrong time.
+* By initializing a member variable in the constructor, we have the option to
+  make it `const`, which helps prevent accidental changes to its value and
+  makes the tests more obviously correct.
+* In case we need to subclass the test fixture class, the subclass'
+  constructor is guaranteed to call the base class' constructor *first*, and
+  the subclass' destructor is guaranteed to call the base class' destructor
+  *afterward*. With `SetUp()/TearDown()`, a subclass may make the mistake of
+  forgetting to call the base class' `SetUp()/TearDown()` or call them at the
+  wrong time.
 
 You may still want to use `SetUp()/TearDown()` in the following rare cases:
 
-*   In the body of a constructor (or destructor), it's not possible to use the
-    `ASSERT_xx` macros. Therefore, if the set-up operation could cause a fatal
-    test failure that should prevent the test from running, it's necessary to
-    use a `CHECK` macro or to use `SetUp()` instead of a constructor.
-*   If the tear-down operation could throw an exception, you must use
-    `TearDown()` as opposed to the destructor, as throwing in a destructor leads
-    to undefined behavior and usually will kill your program right away. Note
-    that many standard libraries (like STL) may throw when exceptions are
-    enabled in the compiler. Therefore you should prefer `TearDown()` if you
-    want to write portable tests that work with or without exceptions.
-*   The googletest team is considering making the assertion macros throw on
-    platforms where exceptions are enabled (e.g. Windows, Mac OS, and Linux
-    client-side), which will eliminate the need for the user to propagate
-    failures from a subroutine to its caller. Therefore, you shouldn't use
-    googletest assertions in a destructor if your code could run on such a
-    platform.
-*   In a constructor or destructor, you cannot make a virtual function call on
-    this object. (You can call a method declared as virtual, but it will be
-    statically bound.) Therefore, if you need to call a method that will be
-    overridden in a derived class, you have to use `SetUp()/TearDown()`.
-
+* In the body of a constructor (or destructor), it's not possible to use the
+  `ASSERT_xx` macros. Therefore, if the set-up operation could cause a fatal
+  test failure that should prevent the test from running, it's necessary to
+  use a `CHECK` macro or to use `SetUp()` instead of a constructor.
+* If the tear-down operation could throw an exception, you must use
+  `TearDown()` as opposed to the destructor, as throwing in a destructor leads
+  to undefined behavior and usually will kill your program right away. Note
+  that many standard libraries (like STL) may throw when exceptions are
+  enabled in the compiler. Therefore you should prefer `TearDown()` if you
+  want to write portable tests that work with or without exceptions.
+* The googletest team is considering making the assertion macros throw on
+  platforms where exceptions are enabled (e.g. Windows, Mac OS, and Linux
+  client-side), which will eliminate the need for the user to propagate
+  failures from a subroutine to its caller. Therefore, you shouldn't use
+  googletest assertions in a destructor if your code could run on such a
+  platform.
+* In a constructor or destructor, you cannot make a virtual function call on
+  this object. (You can call a method declared as virtual, but it will be
+  statically bound.) Therefore, if you need to call a method that will be
+  overridden in a derived class, you have to use `SetUp()/TearDown()`.
 
 ## The compiler complains "no matching function to call" when I use ASSERT_PRED*. How do I fix it?
 
@@ -421,7 +419,6 @@ parentheses:
 ASSERT_PRED2((GreaterThan<int, int>), 5, 0);
 ```
 
-
 ## My compiler complains about "ignoring return value" when I call RUN_ALL_TESTS(). Why?
 
 Some people had been ignoring the return value of `RUN_ALL_TESTS()`. That is,
@@ -481,7 +478,6 @@ googletest's failure message format is understood by Emacs and many other IDEs,
 like acme and XCode. If a googletest message is in a compilation buffer in
 Emacs, then it's clickable.
 
-
 ## I have several test cases which share the same test fixture logic, do I have to define a new test fixture class for each of them? This seems pretty tedious.
 
 You don't have to. Instead of
@@ -527,21 +523,19 @@ example:
 $ ./my_test > gtest_output.txt
 ```
 
-
 ## Why should I prefer test fixtures over global variables?
 
 There are several good reasons:
 
-1.  It's likely your test needs to change the states of its global variables.
-    This makes it difficult to keep side effects from escaping one test and
-    contaminating others, making debugging difficult. By using fixtures, each
-    test has a fresh set of variables that's different (but with the same
-    names). Thus, tests are kept independent of each other.
-1.  Global variables pollute the global namespace.
-1.  Test fixtures can be reused via subclassing, which cannot be done easily
-    with global variables. This is useful if many test cases have something in
-    common.
-
+1. It's likely your test needs to change the states of its global variables.
+   This makes it difficult to keep side effects from escaping one test and
+   contaminating others, making debugging difficult. By using fixtures, each
+   test has a fresh set of variables that's different (but with the same
+   names). Thus, tests are kept independent of each other.
+1. Global variables pollute the global namespace.
+1. Test fixtures can be reused via subclassing, which cannot be done easily
+   with global variables. This is useful if many test cases have something in
+   common.
 
     ## What can the statement argument in ASSERT_DEATH() be?
 
@@ -550,9 +544,9 @@ wherever `*statement*` is valid. So basically `*statement*` can be any C++
 statement that makes sense in the current context. In particular, it can
 reference global and/or local variables, and can be:
 
-*   a simple function call (often the case),
-*   a complex expression, or
-*   a compound statement.
+* a simple function call (often the case),
+* a complex expression, or
+* a compound statement.
 
 Some examples are shown here:
 
@@ -600,13 +594,13 @@ Googletest needs to be able to create objects of your test fixture class, so it
 must have a default constructor. Normally the compiler will define one for you.
 However, there are cases where you have to define your own:
 
-*   If you explicitly declare a non-default constructor for class `FooTest`
-    (`DISALLOW_EVIL_CONSTRUCTORS()` does this), then you need to define a
-    default constructor, even if it would be empty.
-*   If `FooTest` has a const non-static data member, then you have to define the
-    default constructor *and* initialize the const member in the initializer
-    list of the constructor. (Early versions of `gcc` doesn't force you to
-    initialize the const member. It's a bug that has been fixed in `gcc 4`.)
+* If you explicitly declare a non-default constructor for class `FooTest`
+  (`DISALLOW_EVIL_CONSTRUCTORS()` does this), then you need to define a
+  default constructor, even if it would be empty.
+* If `FooTest` has a const non-static data member, then you have to define the
+  default constructor *and* initialize the const member in the initializer
+  list of the constructor. (Early versions of `gcc` doesn't force you to
+  initialize the const member. It's a bug that has been fixed in `gcc 4`.)
 
 ## Why does ASSERT_DEATH complain about previous threads that were already joined?
 
@@ -693,7 +687,6 @@ end of the program run. The easiest way to avoid this is to use the
 statically initialized heap objects. See MSDN for more details and additional
 heap check/debug routines.
 
-
 ## How can my code detect if it is running in a test?
 
 If you write code that sniffs whether it's running in a test and does different
@@ -715,7 +708,6 @@ However, if you *really*, *really*, *really* have no choice, and if you follow
 the rule of ending your test program names with `_test`, you can use the
 *horrible* hack of sniffing your executable name (`argv[0]` in `main()`) to know
 whether the code is under test.
-
 
 ## How do I temporarily disable a test?
 

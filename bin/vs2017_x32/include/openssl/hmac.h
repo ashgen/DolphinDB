@@ -56,19 +56,19 @@
  * [including the GNU Public Licence.]
  */
 #ifndef HEADER_HMAC_H
-# define HEADER_HMAC_H
+#define HEADER_HMAC_H
 
-# include <openssl/opensslconf.h>
+#include <openssl/opensslconf.h>
 
-# ifdef OPENSSL_NO_HMAC
-#  error HMAC is disabled.
-# endif
+#ifdef OPENSSL_NO_HMAC
+#error HMAC is disabled.
+#endif
 
-# include <openssl/evp.h>
+#include <openssl/evp.h>
 
-# define HMAC_MAX_MD_CBLOCK      128/* largest known is SHA512 */
+#define HMAC_MAX_MD_CBLOCK 128 /* largest known is SHA512 */
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -81,13 +81,13 @@ typedef struct hmac_ctx_st {
     unsigned char key[HMAC_MAX_MD_CBLOCK];
 } HMAC_CTX;
 
-# define HMAC_size(e)    (EVP_MD_size((e)->md))
+#define HMAC_size(e) (EVP_MD_size((e)->md))
 
 void HMAC_CTX_init(HMAC_CTX *ctx);
 void HMAC_CTX_cleanup(HMAC_CTX *ctx);
 
 /* deprecated */
-# define HMAC_cleanup(ctx) HMAC_CTX_cleanup(ctx)
+#define HMAC_cleanup(ctx) HMAC_CTX_cleanup(ctx)
 
 /* deprecated */
 int HMAC_Init(HMAC_CTX *ctx, const void *key, int len, const EVP_MD *md);
@@ -102,7 +102,7 @@ int HMAC_CTX_copy(HMAC_CTX *dctx, HMAC_CTX *sctx);
 
 void HMAC_CTX_set_flags(HMAC_CTX *ctx, unsigned long flags);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -59,14 +59,14 @@
  */
 
 #ifndef HEADER_KRB5_ASN_H
-# define HEADER_KRB5_ASN_H
+#define HEADER_KRB5_ASN_H
 
 /*
  * #include <krb5.h>
  */
-# include <openssl/safestack.h>
+#include <openssl/safestack.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -234,7 +234,7 @@ DECLARE_ASN1_FUNCTIONS(KRB5_AUTHENT)
  * made after this point may be overwritten when the script is next run.
  */
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

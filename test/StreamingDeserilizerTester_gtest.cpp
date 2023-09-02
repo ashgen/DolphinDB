@@ -1,35 +1,29 @@
-class StreamingDeserilizerTester : public ::testing::Test, public ::testing::WithParamInterface<int>
-{
+class StreamingDeserilizerTester : public ::testing::Test, public ::testing::WithParamInterface<int> {
 public:
     // Suite
-    static void SetUpTestCase()
-    {
+    static void SetUpTestCase() {
         // DBConnection conn;
         conn.initialize();
         bool ret = conn.connect(hostName, port, "admin", "123456");
-        if (!ret)
-        {
+        if (!ret) {
             cout << "Failed to connect to the server" << endl;
-        }
-        else
-        {
+        } else {
             cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
         }
         isNewVersion = conn.run("flag = 1;v = split(version(), ' ')[0];\
                                 tmp=int(v.split('.'));\
                                 if((tmp[0]==2 && tmp[1]==00 && tmp[2]>=9 )||(tmp[0]==2 && tmp[1]==10)){flag=1;}else{flag=0};\
                                 flag")
-                           ->getBool();
+                ->getBool();
     }
-    static void TearDownTestCase()
-    {
+
+    static void TearDownTestCase() {
         usedPorts.clear();
         conn.close();
     }
 
     // Case
-    virtual void SetUp()
-    {
+    virtual void SetUp() {
         cout << "check connect...";
         ConstantSP res = conn.run("1+1");
 
@@ -43,14 +37,13 @@ public:
                                  "try{ dropStreamTable(`table2_SDPT);}catch(ex){};";
         conn.run(del_streamtable);
     }
-    virtual void TearDown()
-    {
+
+    virtual void TearDown() {
         conn.run("undef all;");
     }
 };
 
-StreamDeserializerSP createStreamDeserializer()
-{
+StreamDeserializerSP createStreamDeserializer() {
     string script = "login(\"admin\",\"123456\")\n\
             st2 = streamTable(100:0, `timestampv`sym`blob`price1,[TIMESTAMP,SYMBOL,BLOB,DOUBLE])\n\
             enableTableShareAndPersistence(table=st2, tableName=`SDoutTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -75,8 +68,7 @@ StreamDeserializerSP createStreamDeserializer()
     return sdsp;
 }
 
-StreamDeserializerSP createStreamDeserializer_2()
-{
+StreamDeserializerSP createStreamDeserializer_2() {
     string script = "login(\"admin\",\"123456\")\n\
             st2 = streamTable(100:0, `timestampv`sym`blob`price1,[TIMESTAMP,SYMBOL,BLOB,DOUBLE])\n\
             enableTableShareAndPersistence(table=st2, tableName=`SDoutTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -107,8 +99,7 @@ StreamDeserializerSP createStreamDeserializer_2()
     return sdsp;
 }
 
-StreamDeserializerSP createStreamDeserializer_3()
-{
+StreamDeserializerSP createStreamDeserializer_3() {
     string script = "login(\"admin\",\"123456\")\n\
             st2 = streamTable(100:0, `timestampv`sym`blob`price1,[TIMESTAMP,SYMBOL,BLOB,DOUBLE])\n\
             enableTableShareAndPersistence(table=st2, tableName=`SDoutTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -134,8 +125,7 @@ StreamDeserializerSP createStreamDeserializer_3()
     return sdsp;
 }
 
-StreamDeserializerSP createStreamDeserializer_witharrayVector()
-{
+StreamDeserializerSP createStreamDeserializer_witharrayVector() {
     string script = "login(\"admin\",\"123456\")\n\
             st2 = streamTable(100:0, `timestampv`sym`blob`price1,[TIMESTAMP,SYMBOL,BLOB,DOUBLE])\n\
             enableTableShareAndPersistence(table=st2, tableName=`SDoutTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -162,8 +152,8 @@ StreamDeserializerSP createStreamDeserializer_witharrayVector()
 }
 
 INSTANTIATE_TEST_CASE_P(listenPortIs, StreamingDeserilizerTester, testing::Values(0, rand() % 1000 + 13000));
-TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -176,12 +166,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -189,9 +177,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -199,19 +185,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp););
-    }
-    else
-    {
+} else {
         auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         thread1->setAffinity(0);
         notify.wait();
@@ -225,8 +209,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -239,14 +223,11 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto batchhandler = [&](vector<Message> msgs)
-    {
+auto batchhandler = [&](vector <Message> msgs) {
         LockGuard<Mutex> lock(&mutex);
-        for (auto &msg : msgs)
-        {
+    for (auto &msg: msgs) {
             const string &symbol = msg.getSymbol();
-            if (symbol == "msg1")
-            {
+        if (symbol == "msg1") {
                 msg1_total += 1;
                 // cout<<"index1= "<<index1<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -266,9 +247,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
                 // EXPECT_EQ(msg->get(4)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
                 index1++;
-            }
-            else if (symbol == "msg2")
-            {
+        } else if (symbol == "msg2") {
                 msg2_total += 1;
                 // cout<<"index2= "<<index2<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -286,20 +265,18 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
                 index2++;
             }
-            if (msg1_total + msg2_total == 2000)
-            {
+        if (msg1_total + msg2_total == 2000) {
                 notify.set();
             }
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread2 = threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp);
         thread2->setAffinity(0);
         notify.wait();
@@ -313,8 +290,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -326,17 +303,15 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
     PollingClient client(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto queue = client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp);
 
         Message msg;
-        thread th1 = thread([&]
-                            {
+thread th1 = thread([&] {
         while (true)
         {
             queue->pop(msg);
@@ -397,8 +372,8 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -410,12 +385,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -423,9 +396,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -433,19 +404,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             EXPECT_EQ(msg->get(3)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 1);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 1);
         notify.wait();
@@ -459,8 +428,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscribeWithstreamDeserilizer)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscribeWithstreamDeserilizer
+) {
     int msg1_total = 0;
     int msg2_total = 0;
     int listenport = GetParam();
@@ -473,31 +442,25 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscri
 
     Signal notify;
     Mutex mutex;
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 2);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 2);
         notify.wait();
@@ -510,15 +473,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -529,15 +491,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -548,14 +509,13 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
     StreamDeserializerSP sdsp = createStreamDeserializer();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -567,8 +527,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_2
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -580,12 +540,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -593,9 +551,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -603,19 +559,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         thread1->setAffinity(0);
         notify.wait();
@@ -629,8 +583,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_2
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -643,14 +597,11 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto batchhandler = [&](vector<Message> msgs)
-    {
+auto batchhandler = [&](vector <Message> msgs) {
         LockGuard<Mutex> lock(&mutex);
-        for (auto &msg : msgs)
-        {
+    for (auto &msg: msgs) {
             const string &symbol = msg.getSymbol();
-            if (symbol == "msg1")
-            {
+        if (symbol == "msg1") {
                 msg1_total += 1;
                 // cout<<"index1= "<<index1<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -670,9 +621,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
                 // EXPECT_EQ(msg->get(4)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
                 index1++;
-            }
-            else if (symbol == "msg2")
-            {
+        } else if (symbol == "msg2") {
                 msg2_total += 1;
                 // cout<<"index2= "<<index2<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -690,20 +639,18 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
                 index2++;
             }
-            if (msg1_total + msg2_total == 2000)
-            {
+        if (msg1_total + msg2_total == 2000) {
                 notify.set();
             }
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread2 = threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp);
         thread2->setAffinity(0);
         notify.wait();
@@ -717,8 +664,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_2
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -730,17 +677,15 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
     PollingClient client(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto queue = client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp);
 
         Message msg;
-        thread th1 = thread([&]
-                            {
+thread th1 = thread([&] {
         while (true)
         {
             queue->pop(msg);
@@ -802,8 +747,8 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer_2
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -815,12 +760,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -828,9 +771,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -838,19 +779,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             EXPECT_EQ(msg->get(3)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 1);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 1);
         notify.wait();
@@ -864,8 +803,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscribeWithstreamDeserilizer_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscribeWithstreamDeserilizer_2
+) {
     int msg1_total = 0;
     int msg2_total = 0;
 
@@ -879,31 +818,25 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscri
 
     Signal notify;
     Mutex mutex;
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 2);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 2);
         notify.wait();
@@ -916,15 +849,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_2_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_2
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_2();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -935,15 +867,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_2)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_2
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_2();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -954,15 +885,14 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_2)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_2)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_2
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_2();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -974,8 +904,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_3
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -987,12 +917,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -1000,9 +928,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             // EXPECT_EQ(msg->get(0)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             // EXPECT_EQ(msg->get(1)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -1010,19 +936,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         thread1->setAffinity(0);
         notify.wait();
@@ -1036,8 +960,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_3
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1050,14 +974,11 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("select * from loadTable(dbpath,`table2_SDPT)");
 
-    auto batchhandler = [&](vector<Message> msgs)
-    {
+auto batchhandler = [&](vector <Message> msgs) {
         LockGuard<Mutex> lock(&mutex);
-        for (auto &msg : msgs)
-        {
+    for (auto &msg: msgs) {
             const string &symbol = msg.getSymbol();
-            if (symbol == "msg1")
-            {
+        if (symbol == "msg1") {
                 msg1_total += 1;
                 // cout<<"index1= "<<index1<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -1077,9 +998,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
                 // EXPECT_EQ(msg->get(4)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
                 index1++;
-            }
-            else if (symbol == "msg2")
-            {
+        } else if (symbol == "msg2") {
                 msg2_total += 1;
                 // cout<<"index2= "<<index2<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -1097,20 +1016,18 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
                 index2++;
             }
-            if (msg1_total + msg2_total == 2000)
-            {
+        if (msg1_total + msg2_total == 2000) {
                 notify.set();
             }
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread2 = threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp);
         thread2->setAffinity(0);
         notify.wait();
@@ -1124,8 +1041,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_3
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1137,17 +1054,15 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     TableSP table2_SDPT = conn.run("select * from loadTable(dbpath,`table2_SDPT)");
 
     PollingClient client(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto queue = client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp);
 
         Message msg;
-        thread th1 = thread([&]
-                            {
+thread th1 = thread([&] {
         while (true)
         {
             queue->pop(msg);
@@ -1209,8 +1124,8 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscribeWithstreamDeserilizer_3
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1222,12 +1137,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("select * from loadTable(dbpath,`table2_SDPT)");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
             EXPECT_EQ(msg->get(1)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("timestampv"))->getString());
@@ -1235,9 +1148,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             // EXPECT_EQ(msg->get(0)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             // EXPECT_EQ(msg->get(1)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -1245,19 +1156,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
             // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 1);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 1);
         notify.wait();
@@ -1271,8 +1180,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_1_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_3_subscribeWithstreamDeserilizer_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_3_subscribeWithstreamDeserilizer_3
+) {
     int msg1_total = 0;
     int msg2_total = 0;
     int listenport = GetParam();
@@ -1285,31 +1194,25 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_3_subscri
 
     Signal notify;
     Mutex mutex;
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadPooledClient client(listenport, 2);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), 2);
         notify.wait();
@@ -1322,15 +1225,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_threadCount_3_subscri
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_3
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_3();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -1341,15 +1243,14 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_with_msgAsTable_True_3)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_3
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_3();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -1360,15 +1261,14 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_with_msgAsTable_True_3)
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_3)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_3
+) {
     int listenport = GetParam();
     cout << "current listenport is " << listenport << endl;
 
     StreamDeserializerSP sdsp = createStreamDeserializer_3();
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         cout << symbol << endl;
     };
@@ -1380,8 +1280,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_with_msgAsTable_True_
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_arrayVector)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstreamDeserilizer_arrayVector
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1393,12 +1293,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(4)->getType(), DT_DOUBLE_ARRAY);
             // cout<<msg->get(0)->getString()<<",";
@@ -1417,9 +1315,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             EXPECT_EQ(msg->get(4)->get(0)->getString(), table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             // cout<<msg->get(0)->getString()<<",";
             // cout<<msg->get(1)->getString()<<",";
@@ -1435,19 +1331,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
             EXPECT_EQ(msg->get(3)->getString(), table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         thread1->setAffinity(0);
         notify.wait();
@@ -1461,8 +1355,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_onehandler_subscribeWithstr
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_arrayVector)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWithstreamDeserilizer_arrayVector
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1475,14 +1369,11 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto batchhandler = [&](vector<Message> msgs)
-    {
+auto batchhandler = [&](vector <Message> msgs) {
         LockGuard<Mutex> lock(&mutex);
-        for (auto &msg : msgs)
-        {
+    for (auto &msg: msgs) {
             const string &symbol = msg.getSymbol();
-            if (symbol == "msg1")
-            {
+        if (symbol == "msg1") {
                 msg1_total += 1;
                 EXPECT_EQ(msg->get(4)->getType(), DT_DOUBLE_ARRAY);
                 // cout<<"index1= "<<index1<<endl;
@@ -1503,9 +1394,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
                 // EXPECT_EQ(msg->get(4)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
                 index1++;
-            }
-            else if (symbol == "msg2")
-            {
+        } else if (symbol == "msg2") {
                 msg2_total += 1;
                 // cout<<"index2= "<<index2<<endl;
                 // cout<<msg->get(0)->getString()<<",";
@@ -1523,20 +1412,18 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
                 // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
                 index2++;
             }
-            if (msg1_total + msg2_total == 2000)
-            {
+        if (msg1_total + msg2_total == 2000) {
                 notify.set();
             }
         }
     };
 
     ThreadedClient threadedClient(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto thread2 = threadedClient.subscribe(hostName, port, batchhandler, "SDoutTables", "mutiSchemaBatch", 0, true, nullptr, true, 1, 1.0, false, "admin", "123456", sdsp);
         thread2->setAffinity(0);
         notify.wait();
@@ -1550,8 +1437,8 @@ TEST_P(StreamingDeserilizerTester, test_Threadclient_batchhandler_subscribeWiths
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_arrayVector)
-{
+TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeserilizer_arrayVector
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1563,17 +1450,15 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
     PollingClient client(listenport);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto queue = client.subscribe(hostName, port, "SDoutTables", "actionTest", 0, true, nullptr, false, false, "admin", "123456", sdsp);
 
         Message msg;
-        thread th1 = thread([&]
-                            {
+thread th1 = thread([&] {
         while (true)
         {
             queue->pop(msg);
@@ -1636,8 +1521,8 @@ TEST_P(StreamingDeserilizerTester, test_Pollingclient_subscribeWithstreamDeseril
     usedPorts.push_back(listenport);
 }
 
-TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_subscribeWithstreamDeserilizer_arrayVector)
-{
+TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_subscribeWithstreamDeserilizer_arrayVector
+) {
     int msg1_total = 0, msg2_total = 0;
     int index1 = 0, index2 = 0;
     int listenport = GetParam();
@@ -1649,12 +1534,10 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_subscribeWithstreamDe
     TableSP table1_SDPT = conn.run("table1_SDPT");
     TableSP table2_SDPT = conn.run("table2_SDPT");
 
-    auto onehandler = [&](Message msg)
-    {
+auto onehandler = [&](Message msg) {
         const string &symbol = msg.getSymbol();
         LockGuard<Mutex> lock(&mutex);
-        if (symbol == "msg1")
-        {
+    if (symbol == "msg1") {
             msg1_total += 1;
             EXPECT_EQ(msg->get(4)->getType(), DT_DOUBLE_ARRAY);
             // EXPECT_EQ(msg->get(0)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("datetimev"))->getString());
@@ -1663,9 +1546,7 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_subscribeWithstreamDe
             // EXPECT_EQ(msg->get(3)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price1"))->getString());
             // EXPECT_EQ(msg->get(4)->getString(),table1_SDPT->getRow(index1)->get(Util::createString("price2"))->getString());
             index1++;
-        }
-        else if (symbol == "msg2")
-        {
+    } else if (symbol == "msg2") {
             msg2_total += 1;
             // EXPECT_EQ(msg->get(0)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("datetimev"))->getString());
             // EXPECT_EQ(msg->get(1)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("timestampv"))->getString());
@@ -1673,19 +1554,17 @@ TEST_P(StreamingDeserilizerTester, test_Threadpooledclient_subscribeWithstreamDe
             // EXPECT_EQ(msg->get(3)->getString(),table2_SDPT->getRow(index2)->get(Util::createString("price1"))->getString());
             index2++;
         }
-        if (msg1_total + msg2_total == 2000)
-        {
+    if (msg1_total + msg2_total == 2000) {
             notify.set();
         }
     };
     int threadCount = rand() % 10 + 1;
     ThreadPooledClient client(listenport, threadCount);
-    if (!isNewVersion && listenport == 0)
-    {
+if (!
+isNewVersion &&listenport
+== 0) {
         EXPECT_ANY_THROW(client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp));
-    }
-    else
-    {
+} else {
         auto threadVec = client.subscribe(hostName, port, onehandler, "SDoutTables", "test_SD", 0, true, nullptr, false, false, "admin", "123456", sdsp);
         EXPECT_EQ(threadVec.size(), threadCount);
         notify.wait();

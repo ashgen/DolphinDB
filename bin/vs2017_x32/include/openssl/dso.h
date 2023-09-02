@@ -58,18 +58,18 @@
  */
 
 #ifndef HEADER_DSO_H
-# define HEADER_DSO_H
+#define HEADER_DSO_H
 
-# include <openssl/crypto.h>
+#include <openssl/crypto.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* These values are used as commands to DSO_ctrl() */
-# define DSO_CTRL_GET_FLAGS      1
-# define DSO_CTRL_SET_FLAGS      2
-# define DSO_CTRL_OR_FLAGS       3
+#define DSO_CTRL_GET_FLAGS 1
+#define DSO_CTRL_SET_FLAGS 2
+#define DSO_CTRL_OR_FLAGS 3
 
 /*
  * By default, DSO_load() will translate the provided filename into a form
@@ -84,7 +84,7 @@ extern "C" {
  * if the caller has prompted the user for a path to a driver library so the
  * filename should be interpreted as-is.
  */
-# define DSO_FLAG_NO_NAME_TRANSLATION            0x01
+#define DSO_FLAG_NO_NAME_TRANSLATION 0x01
 /*
  * An extra flag to give if only the extension should be added as
  * translation.  This is obviously only of importance on Unix and other
@@ -92,22 +92,22 @@ extern "C" {
  * something, like 'lib', and ignored everywhere else. This flag is also
  * ignored if DSO_FLAG_NO_NAME_TRANSLATION is used at the same time.
  */
-# define DSO_FLAG_NAME_TRANSLATION_EXT_ONLY      0x02
+#define DSO_FLAG_NAME_TRANSLATION_EXT_ONLY 0x02
 
 /*
  * The following flag controls the translation of symbol names to upper case.
  * This is currently only being implemented for OpenVMS.
  */
-# define DSO_FLAG_UPCASE_SYMBOL                  0x10
+#define DSO_FLAG_UPCASE_SYMBOL 0x10
 
 /*
  * This flag loads the library with public symbols. Meaning: The exported
  * symbols of this library are public to all libraries loaded after this
  * library. At the moment only implemented in unix.
  */
-# define DSO_FLAG_GLOBAL_SYMBOLS                 0x20
+#define DSO_FLAG_GLOBAL_SYMBOLS 0x20
 
-typedef void (*DSO_FUNC_TYPE) (void);
+typedef void (*DSO_FUNC_TYPE)(void);
 
 typedef struct dso_st DSO;
 
@@ -144,11 +144,11 @@ typedef struct dso_meth_st {
      * successful load populates the loaded_filename field, and likewise a
      * successful unload OPENSSL_frees and NULLs it out.
      */
-    int (*dso_load) (DSO *dso);
+    int (*dso_load)(DSO *dso);
     /* Unloads a shared library */
-    int (*dso_unload) (DSO *dso);
+    int (*dso_unload)(DSO *dso);
     /* Binds a variable */
-    void *(*dso_bind_var) (DSO *dso, const char *symname);
+    void *(*dso_bind_var)(DSO *dso, const char *symname);
     /*
      * Binds a function - assumes a return type of DSO_FUNC_TYPE. This should
      * be cast to the real function prototype by the caller. Platforms that
@@ -156,19 +156,20 @@ typedef struct dso_meth_st {
      * is possible within ANSI C) are highly unlikely to have shared
      * libraries at all, let alone a DSO_METHOD implemented for them.
      */
-    DSO_FUNC_TYPE (*dso_bind_func) (DSO *dso, const char *symname);
+    DSO_FUNC_TYPE (*dso_bind_func)
+            (DSO *dso, const char *symname);
 /* I don't think this would actually be used in any circumstances. */
-# if 0
+#if 0
     /* Unbinds a variable */
     int (*dso_unbind_var) (DSO *dso, char *symname, void *symptr);
     /* Unbinds a function */
     int (*dso_unbind_func) (DSO *dso, char *symname, DSO_FUNC_TYPE symptr);
-# endif
+#endif
     /*
      * The generic (yuck) "ctrl()" function. NB: Negative return values
      * (rather than zero) indicate errors.
      */
-    long (*dso_ctrl) (DSO *dso, int cmd, long larg, void *parg);
+    long (*dso_ctrl)(DSO *dso, int cmd, long larg, void *parg);
     /*
      * The default DSO_METHOD-specific function for converting filenames to a
      * canonical native form.
@@ -180,12 +181,13 @@ typedef struct dso_meth_st {
      */
     DSO_MERGER_FUNC dso_merger;
     /* [De]Initialisation handlers. */
-    int (*init) (DSO *dso);
-    int (*finish) (DSO *dso);
+    int (*init)(DSO *dso);
+
+    int (*finish)(DSO *dso);
     /* Return pathname of the module containing location */
-    int (*pathbyaddr) (void *addr, char *path, int sz);
+    int (*pathbyaddr)(void *addr, char *path, int sz);
     /* Perform global symbol lookup, i.e. among *all* modules */
-    void *(*globallookup) (const char *symname);
+    void *(*globallookup)(const char *symname);
 } DSO_METHOD;
 
 /**********************************************************************/
@@ -376,76 +378,76 @@ void ERR_load_DSO_strings(void);
 /* Error codes for the DSO functions. */
 
 /* Function codes. */
-# define DSO_F_BEOS_BIND_FUNC                             144
-# define DSO_F_BEOS_BIND_VAR                              145
-# define DSO_F_BEOS_LOAD                                  146
-# define DSO_F_BEOS_NAME_CONVERTER                        147
-# define DSO_F_BEOS_UNLOAD                                148
-# define DSO_F_DLFCN_BIND_FUNC                            100
-# define DSO_F_DLFCN_BIND_VAR                             101
-# define DSO_F_DLFCN_LOAD                                 102
-# define DSO_F_DLFCN_MERGER                               130
-# define DSO_F_DLFCN_NAME_CONVERTER                       123
-# define DSO_F_DLFCN_UNLOAD                               103
-# define DSO_F_DL_BIND_FUNC                               104
-# define DSO_F_DL_BIND_VAR                                105
-# define DSO_F_DL_LOAD                                    106
-# define DSO_F_DL_MERGER                                  131
-# define DSO_F_DL_NAME_CONVERTER                          124
-# define DSO_F_DL_UNLOAD                                  107
-# define DSO_F_DSO_BIND_FUNC                              108
-# define DSO_F_DSO_BIND_VAR                               109
-# define DSO_F_DSO_CONVERT_FILENAME                       126
-# define DSO_F_DSO_CTRL                                   110
-# define DSO_F_DSO_FREE                                   111
-# define DSO_F_DSO_GET_FILENAME                           127
-# define DSO_F_DSO_GET_LOADED_FILENAME                    128
-# define DSO_F_DSO_GLOBAL_LOOKUP                          139
-# define DSO_F_DSO_LOAD                                   112
-# define DSO_F_DSO_MERGE                                  132
-# define DSO_F_DSO_NEW_METHOD                             113
-# define DSO_F_DSO_PATHBYADDR                             140
-# define DSO_F_DSO_SET_FILENAME                           129
-# define DSO_F_DSO_SET_NAME_CONVERTER                     122
-# define DSO_F_DSO_UP_REF                                 114
-# define DSO_F_GLOBAL_LOOKUP_FUNC                         138
-# define DSO_F_PATHBYADDR                                 137
-# define DSO_F_VMS_BIND_SYM                               115
-# define DSO_F_VMS_LOAD                                   116
-# define DSO_F_VMS_MERGER                                 133
-# define DSO_F_VMS_UNLOAD                                 117
-# define DSO_F_WIN32_BIND_FUNC                            118
-# define DSO_F_WIN32_BIND_VAR                             119
-# define DSO_F_WIN32_GLOBALLOOKUP                         142
-# define DSO_F_WIN32_GLOBALLOOKUP_FUNC                    143
-# define DSO_F_WIN32_JOINER                               135
-# define DSO_F_WIN32_LOAD                                 120
-# define DSO_F_WIN32_MERGER                               134
-# define DSO_F_WIN32_NAME_CONVERTER                       125
-# define DSO_F_WIN32_PATHBYADDR                           141
-# define DSO_F_WIN32_SPLITTER                             136
-# define DSO_F_WIN32_UNLOAD                               121
+#define DSO_F_BEOS_BIND_FUNC 144
+#define DSO_F_BEOS_BIND_VAR 145
+#define DSO_F_BEOS_LOAD 146
+#define DSO_F_BEOS_NAME_CONVERTER 147
+#define DSO_F_BEOS_UNLOAD 148
+#define DSO_F_DLFCN_BIND_FUNC 100
+#define DSO_F_DLFCN_BIND_VAR 101
+#define DSO_F_DLFCN_LOAD 102
+#define DSO_F_DLFCN_MERGER 130
+#define DSO_F_DLFCN_NAME_CONVERTER 123
+#define DSO_F_DLFCN_UNLOAD 103
+#define DSO_F_DL_BIND_FUNC 104
+#define DSO_F_DL_BIND_VAR 105
+#define DSO_F_DL_LOAD 106
+#define DSO_F_DL_MERGER 131
+#define DSO_F_DL_NAME_CONVERTER 124
+#define DSO_F_DL_UNLOAD 107
+#define DSO_F_DSO_BIND_FUNC 108
+#define DSO_F_DSO_BIND_VAR 109
+#define DSO_F_DSO_CONVERT_FILENAME 126
+#define DSO_F_DSO_CTRL 110
+#define DSO_F_DSO_FREE 111
+#define DSO_F_DSO_GET_FILENAME 127
+#define DSO_F_DSO_GET_LOADED_FILENAME 128
+#define DSO_F_DSO_GLOBAL_LOOKUP 139
+#define DSO_F_DSO_LOAD 112
+#define DSO_F_DSO_MERGE 132
+#define DSO_F_DSO_NEW_METHOD 113
+#define DSO_F_DSO_PATHBYADDR 140
+#define DSO_F_DSO_SET_FILENAME 129
+#define DSO_F_DSO_SET_NAME_CONVERTER 122
+#define DSO_F_DSO_UP_REF 114
+#define DSO_F_GLOBAL_LOOKUP_FUNC 138
+#define DSO_F_PATHBYADDR 137
+#define DSO_F_VMS_BIND_SYM 115
+#define DSO_F_VMS_LOAD 116
+#define DSO_F_VMS_MERGER 133
+#define DSO_F_VMS_UNLOAD 117
+#define DSO_F_WIN32_BIND_FUNC 118
+#define DSO_F_WIN32_BIND_VAR 119
+#define DSO_F_WIN32_GLOBALLOOKUP 142
+#define DSO_F_WIN32_GLOBALLOOKUP_FUNC 143
+#define DSO_F_WIN32_JOINER 135
+#define DSO_F_WIN32_LOAD 120
+#define DSO_F_WIN32_MERGER 134
+#define DSO_F_WIN32_NAME_CONVERTER 125
+#define DSO_F_WIN32_PATHBYADDR 141
+#define DSO_F_WIN32_SPLITTER 136
+#define DSO_F_WIN32_UNLOAD 121
 
 /* Reason codes. */
-# define DSO_R_CTRL_FAILED                                100
-# define DSO_R_DSO_ALREADY_LOADED                         110
-# define DSO_R_EMPTY_FILE_STRUCTURE                       113
-# define DSO_R_FAILURE                                    114
-# define DSO_R_FILENAME_TOO_BIG                           101
-# define DSO_R_FINISH_FAILED                              102
-# define DSO_R_INCORRECT_FILE_SYNTAX                      115
-# define DSO_R_LOAD_FAILED                                103
-# define DSO_R_NAME_TRANSLATION_FAILED                    109
-# define DSO_R_NO_FILENAME                                111
-# define DSO_R_NO_FILE_SPECIFICATION                      116
-# define DSO_R_NULL_HANDLE                                104
-# define DSO_R_SET_FILENAME_FAILED                        112
-# define DSO_R_STACK_ERROR                                105
-# define DSO_R_SYM_FAILURE                                106
-# define DSO_R_UNLOAD_FAILED                              107
-# define DSO_R_UNSUPPORTED                                108
+#define DSO_R_CTRL_FAILED 100
+#define DSO_R_DSO_ALREADY_LOADED 110
+#define DSO_R_EMPTY_FILE_STRUCTURE 113
+#define DSO_R_FAILURE 114
+#define DSO_R_FILENAME_TOO_BIG 101
+#define DSO_R_FINISH_FAILED 102
+#define DSO_R_INCORRECT_FILE_SYNTAX 115
+#define DSO_R_LOAD_FAILED 103
+#define DSO_R_NAME_TRANSLATION_FAILED 109
+#define DSO_R_NO_FILENAME 111
+#define DSO_R_NO_FILE_SPECIFICATION 116
+#define DSO_R_NULL_HANDLE 104
+#define DSO_R_SET_FILENAME_FAILED 112
+#define DSO_R_STACK_ERROR 105
+#define DSO_R_SYM_FAILURE 106
+#define DSO_R_UNLOAD_FAILED 107
+#define DSO_R_UNSUPPORTED 108
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

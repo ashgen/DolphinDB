@@ -57,45 +57,50 @@
  */
 
 #ifndef HEADER_RAND_H
-# define HEADER_RAND_H
+#define HEADER_RAND_H
 
-# include <stdlib.h>
-# include <openssl/ossl_typ.h>
-# include <openssl/e_os2.h>
+#include <openssl/e_os2.h>
+#include <openssl/ossl_typ.h>
+#include <stdlib.h>
 
-# if defined(OPENSSL_SYS_WINDOWS)
-#  include <windows.h>
-# endif
+#if defined(OPENSSL_SYS_WINDOWS)
+#include <windows.h>
+#endif
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-# if defined(OPENSSL_FIPS)
-#  define FIPS_RAND_SIZE_T size_t
-# endif
+#if defined(OPENSSL_FIPS)
+#define FIPS_RAND_SIZE_T size_t
+#endif
 
 /* Already defined in ossl_typ.h */
 /* typedef struct rand_meth_st RAND_METHOD; */
 
 struct rand_meth_st {
-    void (*seed) (const void *buf, int num);
-    int (*bytes) (unsigned char *buf, int num);
-    void (*cleanup) (void);
-    void (*add) (const void *buf, int num, double entropy);
-    int (*pseudorand) (unsigned char *buf, int num);
-    int (*status) (void);
+    void (*seed)(const void *buf, int num);
+
+    int (*bytes)(unsigned char *buf, int num);
+
+    void (*cleanup)(void);
+
+    void (*add)(const void *buf, int num, double entropy);
+
+    int (*pseudorand)(unsigned char *buf, int num);
+
+    int (*status)(void);
 };
 
-# ifdef BN_DEBUG
+#ifdef BN_DEBUG
 extern int rand_predictable;
-# endif
+#endif
 
 int RAND_set_rand_method(const RAND_METHOD *meth);
 const RAND_METHOD *RAND_get_rand_method(void);
-# ifndef OPENSSL_NO_ENGINE
+#ifndef OPENSSL_NO_ENGINE
 int RAND_set_rand_engine(ENGINE *engine);
-# endif
+#endif
 RAND_METHOD *RAND_SSLeay(void);
 void RAND_cleanup(void);
 int RAND_bytes(unsigned char *buf, int num);
@@ -111,17 +116,17 @@ int RAND_egd(const char *path);
 int RAND_egd_bytes(const char *path, int bytes);
 int RAND_poll(void);
 
-# if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32)
+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32)
 
 void RAND_screen(void);
 int RAND_event(UINT, WPARAM, LPARAM);
 
-# endif
+#endif
 
-# ifdef OPENSSL_FIPS
+#ifdef OPENSSL_FIPS
 void RAND_set_fips_drbg_type(int type, int flags);
 int RAND_init_fips(void);
-# endif
+#endif
 
 /* BEGIN ERROR CODES */
 /*
@@ -133,18 +138,18 @@ void ERR_load_RAND_strings(void);
 /* Error codes for the RAND functions. */
 
 /* Function codes. */
-# define RAND_F_RAND_GET_RAND_METHOD                      101
-# define RAND_F_RAND_INIT_FIPS                            102
-# define RAND_F_SSLEAY_RAND_BYTES                         100
+#define RAND_F_RAND_GET_RAND_METHOD 101
+#define RAND_F_RAND_INIT_FIPS 102
+#define RAND_F_SSLEAY_RAND_BYTES 100
 
 /* Reason codes. */
-# define RAND_R_DUAL_EC_DRBG_DISABLED                     104
-# define RAND_R_ERROR_INITIALISING_DRBG                   102
-# define RAND_R_ERROR_INSTANTIATING_DRBG                  103
-# define RAND_R_NO_FIPS_RANDOM_METHOD_SET                 101
-# define RAND_R_PRNG_NOT_SEEDED                           100
+#define RAND_R_DUAL_EC_DRBG_DISABLED 104
+#define RAND_R_ERROR_INITIALISING_DRBG 102
+#define RAND_R_ERROR_INSTANTIATING_DRBG 103
+#define RAND_R_NO_FIPS_RANDOM_METHOD_SET 101
+#define RAND_R_PRNG_NOT_SEEDED 100
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

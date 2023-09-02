@@ -1,13 +1,12 @@
-#include <iostream>
-#include "config.h"
 #include "Streaming.h"
+#include "config.h"
+#include <iostream>
 using namespace std;
 using namespace dolphindb;
 using namespace std::chrono;
 #ifdef WINDOWS
 #define sleep(x) Sleep(x)
 #endif
-
 
 
 int main() {
@@ -19,10 +18,10 @@ int main() {
         ConstantSP res = msg->get(0);
         //printf("%d",res->size());
         size_t len = res->size();
-        for (int i=0; i<len; i++){
+        for (int i = 0; i < len; i++) {
             ConstantSP row = res->getRow(i);
             long long value = row->getLong();
-            Constant* time = Util::createTimestamp(value);
+            Constant *time = Util::createTimestamp(value);
             //string value = row->getString(i);
             //Constant* symv = Util::createString(value);
             //int value = row->getInt(i);
@@ -33,7 +32,7 @@ int main() {
             //Constant* exchv = Util::createString(value);
             //long long value = row->getLong();
             //Constant* x = Util::createLong(value); //收到的数据符合预期
-            cout<<time->getString()<<endl;
+            cout << time->getString() << endl;
         }
         if (cnt == 0) then = system_clock::now();
         ++cnt, ++total;
@@ -52,7 +51,7 @@ int main() {
     PollingClient client(listenport);
 
     //auto queue = client.subscribe(hostName, port, "trades", DEFAULT_ACTION_NAME, 0);
-    auto queue = client.subscribe(hostName, port,table, DEFAULT_ACTION_NAME, 0);
+    auto queue = client.subscribe(hostName, port, table, DEFAULT_ACTION_NAME, 0);
     Message msg;
     while (true) {
         if (queue->poll(msg, 1000)) {
@@ -63,5 +62,4 @@ int main() {
         printf("wakeup!\n");
         client.unsubscribe(hostName, port, table,DEFAULT_ACTION_NAME);*/
     }
-
 }

@@ -5,7 +5,7 @@
 using namespace dolphindb;
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
     DBConnection conn;
     bool ret = conn.connect("127.0.0.1", 8848);

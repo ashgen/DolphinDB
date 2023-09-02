@@ -1,38 +1,31 @@
-namespace SPCT
-{
-    class StreamingPollingClientTester : public testing::Test, public ::testing::WithParamInterface<int>
-    {
+namespace SPCT {
+    class StreamingPollingClientTester : public testing::Test, public ::testing::WithParamInterface<int> {
     public:
         // Suite
-        static void SetUpTestCase()
-        {
+        static void SetUpTestCase() {
             // DBConnection conn;
 
             conn.initialize();
             bool ret = conn.connect(hostName, port, "admin", "123456");
-            if (!ret)
-            {
+            if (!ret) {
                 cout << "Failed to connect to the server" << endl;
-            }
-            else
-            {
+            } else {
                 cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
                 isNewVersion = conn.run("flag = 1;v = split(version(), ' ')[0];\
                                 tmp=int(v.split('.'));\
                                 if((tmp[0]==2 && tmp[1]==00 && tmp[2]>=9 )||(tmp[0]==2 && tmp[1]==10)){flag=1;}else{flag=0};\
                                 flag")
-                                   ->getBool();
+                        ->getBool();
             }
         }
-        static void TearDownTestCase()
-        {
+
+        static void TearDownTestCase() {
             usedPorts.clear();
             conn.close();
         }
 
         // Case
-        virtual void SetUp()
-        {
+        virtual void SetUp() {
             cout << "check connect...";
             ConstantSP res = conn.run("1+1");
 
@@ -43,14 +36,13 @@ namespace SPCT
                                      "try{ dropStreamTable(`arrayVectorTable);}catch(ex){};";
             conn.run(del_streamtable);
         }
-        virtual void TearDown()
-        {
+
+        virtual void TearDown() {
             conn.run("undef all;");
         }
     };
 
-    static void createSharedTableAndReplay(int rows)
-    {
+    static void createSharedTableAndReplay(int rows) {
         string script = "login(\"admin\",\"123456\")\n\
                 st1 = streamTable(100:0, `datetimev`timestampv`sym`price1`price2,[DATETIME,TIMESTAMP,SYMBOL,DOUBLE,DOUBLE])\n\
                 enableTableShareAndPersistence(table=st1, tableName=`outTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -64,8 +56,7 @@ namespace SPCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withAllDataType()
-    {
+    static void createSharedTableAndReplay_withAllDataType() {
         srand(time(NULL));
         int scale32 = rand() % 9;
         int scale64 = rand() % 18;
@@ -88,8 +79,7 @@ namespace SPCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withArrayVector()
-    {
+    static void createSharedTableAndReplay_withArrayVector() {
         string replayScript = "colName =  `ts`cbool`cchar`cshort`cint`clong`cdate`cmonth`ctime`cminute`csecond`cdatetime`ctimestamp`cnanotime`cnanotimestamp`cfloat`cdouble`cipaddr`cuuid`cint128;"
                               "colType = [TIMESTAMP,BOOL[], CHAR[], SHORT[], INT[],LONG[], DATE[], MONTH[], TIME[], MINUTE[], SECOND[], DATETIME[], TIMESTAMP[], NANOTIME[], NANOTIMESTAMP[], FLOAT[], DOUBLE[], IPADDR[], UUID[], INT128[]];"
                               "st1 = streamTable(100:0,colName, colType);"
@@ -109,25 +99,24 @@ namespace SPCT
     }
 
     INSTANTIATE_TEST_CASE_P(StreamingReverse, StreamingPollingClientTester, testing::Values(0, rand() % 1000 + 13000));
-    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_normal)
-    {
+    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_normal
+    ) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+    if (!
+    isNewVersion &&listenport
+    == 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+}
+else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
 
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -146,8 +135,8 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_hostNull)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_hostNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
@@ -157,8 +146,8 @@ namespace SPCT
         EXPECT_ANY_THROW(client.subscribe("", port, "outTables", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_portNull)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_portNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
@@ -168,8 +157,8 @@ namespace SPCT
         EXPECT_ANY_THROW(client.subscribe(hostName, NULL, "outTables", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_tableNameNull)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_tableNameNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
@@ -179,24 +168,22 @@ namespace SPCT
         EXPECT_ANY_THROW(auto queue = client.subscribe(hostName, port, "", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_actionNameNull)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_actionNameNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "", 0);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -215,24 +202,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_offsetNegative)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_offsetNegative
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", -1, false));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", -1, false);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -251,8 +236,8 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_filter)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_filter
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
@@ -262,16 +247,14 @@ namespace SPCT
         filter->setString(0, "a");
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, true, filter));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, true, filter);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -290,24 +273,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_msgAsTable)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_msgAsTable
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, true, nullptr, true));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, true, nullptr, true);
             Message msg;
-            ThreadSP th1 = new Thread(new Executor([&]
-                                                   {
+ThreadSP th1 = new Thread(new Executor([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -331,24 +312,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_allowExists)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_allowExists
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, true, nullptr, false, true));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, true, nullptr, false, true);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -367,8 +346,8 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_resub_false)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_resub_false
+) {
         // SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
@@ -380,20 +359,19 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_resub_true)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_resub_true
+) {
         // SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, true));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, true);
             Util::sleep(2000);
             client.unsubscribe(hostName, port, "outTables", "actionTest");
@@ -402,24 +380,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_unsubscribe_hostNull)
-    {
+TEST_P(StreamingPollingClientTester, test_unsubscribe_hostNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -439,24 +415,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_unsubscribe_portNull)
-    {
+TEST_P(StreamingPollingClientTester, test_unsubscribe_portNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -476,24 +450,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_unsubscribe_tableNameNull)
-    {
+TEST_P(StreamingPollingClientTester, test_unsubscribe_tableNameNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -513,24 +485,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_unsubscribe_actionNameNull)
-    {
+TEST_P(StreamingPollingClientTester, test_unsubscribe_actionNameNull
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -554,24 +524,22 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribe_twice)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribe_twice
+) {
         SPCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, false));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, false);
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -592,28 +560,26 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_withAllDataType)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_withAllDataType
+) {
         SPCT::createSharedTableAndReplay_withAllDataType();
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
 
             TableSP ex_table = conn.run("select * from outTables");
             int index = 0;
 
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -639,8 +605,8 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_arrayVector)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_arrayVector
+) {
         SPCT::createSharedTableAndReplay_withArrayVector();
         int msg_total = 0;
         int index = 0;
@@ -648,19 +614,17 @@ namespace SPCT
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "arrayVectorTable", "arrayVectorTableTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "arrayVectorTable", "arrayVectorTableTest", 0);
 
             Util::sleep(1000);
             TableSP ex_tab = conn.run("select * from arrayVectorTable");
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -685,25 +649,23 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_hugetable)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_hugetable
+) {
         SPCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0);
 
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -716,8 +678,7 @@ namespace SPCT
                     }
             } });
 
-            while (msg_total != 1000000)
-            {
+while (msg_total != 1000000) {
                 Util::sleep(500);
             }
             client.unsubscribe(hostName, port, "outTables", "actionTest");
@@ -730,25 +691,23 @@ namespace SPCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_hugetable_msgAsTable)
-    {
+TEST_P(StreamingPollingClientTester, test_subscribeUnsubscribe_hugetable_msgAsTable
+) {
         SPCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
 
         PollingClient client(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(client.subscribe(hostName, port, "outTables", "actionTest", 0, false, nullptr, true));
-        }
-        else
-        {
+} else {
             auto queue = client.subscribe(hostName, port, "outTables", "actionTest", 0, false, nullptr, true);
 
             Message msg;
-            thread th1 = thread([&]
-                                {
+thread th1 = thread([&] {
             while (true)
             {
                 queue->pop(msg);
@@ -761,8 +720,7 @@ namespace SPCT
                             cout << "now subscribed rows: " << msg_total << endl;
                     }
             } });
-            while (msg_total != 1000000)
-            {
+while (msg_total != 1000000) {
                 Util::sleep(500);
             }
             client.unsubscribe(hostName, port, "outTables", "actionTest");
@@ -774,4 +732,4 @@ namespace SPCT
         }
         usedPorts.push_back(listenport);
     }
-}
+}// namespace SPCT

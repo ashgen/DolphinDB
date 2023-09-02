@@ -50,37 +50,37 @@
  */
 
 #ifndef HEADER_AES_H
-# define HEADER_AES_H
+#define HEADER_AES_H
 
-# include <openssl/opensslconf.h>
+#include <openssl/opensslconf.h>
 
-# ifdef OPENSSL_NO_AES
-#  error AES is disabled.
-# endif
+#ifdef OPENSSL_NO_AES
+#error AES is disabled.
+#endif
 
-# include <stddef.h>
+#include <stddef.h>
 
-# define AES_ENCRYPT     1
-# define AES_DECRYPT     0
+#define AES_ENCRYPT 1
+#define AES_DECRYPT 0
 
 /*
  * Because array size can't be a const in C, the following two are macros.
  * Both sizes are in bytes.
  */
-# define AES_MAXNR 14
-# define AES_BLOCK_SIZE 16
+#define AES_MAXNR 14
+#define AES_BLOCK_SIZE 16
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 /* This should be a hidden type, but EVP requires that the size be known */
 struct aes_key_st {
-# ifdef AES_LONG
+#ifdef AES_LONG
     unsigned long rd_key[4 * (AES_MAXNR + 1)];
-# else
+#else
     unsigned int rd_key[4 * (AES_MAXNR + 1)];
-# endif
+#endif
     int rounds;
 };
 typedef struct aes_key_st AES_KEY;
@@ -142,8 +142,8 @@ int AES_unwrap_key(AES_KEY *key, const unsigned char *iv,
                    const unsigned char *in, unsigned int inlen);
 
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif                          /* !HEADER_AES_H */
+#endif /* !HEADER_AES_H */

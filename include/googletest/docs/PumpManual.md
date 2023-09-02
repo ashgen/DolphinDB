@@ -1,5 +1,3 @@
-
-
 <b>P</b>ump is <b>U</b>seful for <b>M</b>eta <b>P</b>rogramming.
 
 # The Problem #
@@ -11,7 +9,7 @@ error-prone work.
 
 Variadic templates and variadic macros can alleviate the problem.
 However, while both are being considered by the C++ committee, neither
-is in the standard yet or widely supported by compilers.  Thus they
+is in the standard yet or widely supported by compilers. Thus they
 are often not a good choice, especially when your code needs to be
 portable. And their capabilities are still limited.
 
@@ -39,14 +37,18 @@ maintain.
 
 ## Highlights ##
 
-  * The implementation is in a single Python script and thus ultra portable: no build or installation is needed and it works cross platforms.
-  * Pump tries to be smart with respect to [Google's style guide](https://github.com/google/styleguide): it breaks long lines (easy to have when they are generated) at acceptable places to fit within 80 columns and indent the continuation lines correctly.
-  * The format is human-readable and more concise than XML.
-  * The format works relatively well with Emacs' C++ mode.
+* The implementation is in a single Python script and thus ultra portable: no build or installation is needed and it
+  works cross platforms.
+* Pump tries to be smart with respect to [Google's style guide](https://github.com/google/styleguide): it breaks long
+  lines (easy to have when they are generated) at acceptable places to fit within 80 columns and indent the continuation
+  lines correctly.
+* The format is human-readable and more concise than XML.
+* The format works relatively well with Emacs' C++ mode.
 
 ## Examples ##
 
-The following Pump code (where meta keywords start with `$`, `[[` and `]]` are meta brackets, and `$$` starts a meta comment that ends with the line):
+The following Pump code (where meta keywords start with `$`, `[[` and `]]` are meta brackets, and `$$` starts a meta
+comment that ends with the line):
 
 ```
 $var n = 3     $$ Defines a meta variable n.
@@ -119,17 +121,17 @@ Func(a1 + a2 + a3);  // If n is 3.
 
 We support the following meta programming constructs:
 
-| `$var id = exp` | Defines a named constant value. `$id` is valid util the end of the current meta lexical block. |
-|:----------------|:-----------------------------------------------------------------------------------------------|
-| `$range id exp..exp` | Sets the range of an iteration variable, which can be reused in multiple loops later.          |
-| `$for id sep [[ code ]]` | Iteration. The range of `id` must have been defined earlier. `$id` is valid in `code`.         |
-| `$($)`          | Generates a single `$` character.                                                              |
-| `$id`           | Value of the named constant or iteration variable.                                             |
-| `$(exp)`        | Value of the expression.                                                                       |
+| `$var id = exp`                  | Defines a named constant value. `$id` is valid util the end of the current meta lexical block. |
+|:---------------------------------|:-----------------------------------------------------------------------------------------------|
+| `$range id exp..exp`             | Sets the range of an iteration variable, which can be reused in multiple loops later.          |
+| `$for id sep [[ code ]]`         | Iteration. The range of `id` must have been defined earlier. `$id` is valid in `code`.         |
+| `$($)`                           | Generates a single `$` character.                                                              |
+| `$id`                            | Value of the named constant or iteration variable.                                             |
+| `$(exp)`                         | Value of the expression.                                                                       |
 | `$if exp [[ code ]] else_branch` | Conditional.                                                                                   |
-| `[[ code ]]`    | Meta lexical block.                                                                            |
-| `cpp_code`      | Raw C++ code.                                                                                  |
-| `$$ comment`    | Meta comment.                                                                                  |
+| `[[ code ]]`                     | Meta lexical block.                                                                            |
+| `cpp_code`                       | Raw C++ code.                                                                                  |
+| `$$ comment`                     | Meta comment.                                                                                  |
 
 **Note:** To give the user some freedom in formatting the Pump source
 code, Pump ignores a new-line character if it's right after `$for foo`
@@ -169,9 +171,14 @@ improving Pump.
 
 ## Real Examples ##
 
-You can find real-world applications of Pump in [Google Test](https://github.com/google/googletest/tree/master/googletest) and [Google Mock](https://github.com/google/googletest/tree/master/googlemock). The source file `foo.h.pump` generates `foo.h`.
+You can find real-world applications of Pump
+in [Google Test](https://github.com/google/googletest/tree/master/googletest)
+and [Google Mock](https://github.com/google/googletest/tree/master/googlemock). The source file `foo.h.pump`
+generates `foo.h`.
 
 ## Tips ##
 
-  * If a meta variable is followed by a letter or digit, you can separate them using `[[]]`, which inserts an empty string. For example `Foo$j[[]]Helper` generate `Foo1Helper` when `j` is 1.
-  * To avoid extra-long Pump source lines, you can break a line anywhere you want by inserting `[[]]` followed by a new line. Since any new-line character next to `[[` or `]]` is ignored, the generated code won't contain this new line.
+* If a meta variable is followed by a letter or digit, you can separate them using `[[]]`, which inserts an empty
+  string. For example `Foo$j[[]]Helper` generate `Foo1Helper` when `j` is 1.
+* To avoid extra-long Pump source lines, you can break a line anywhere you want by inserting `[[]]` followed by a new
+  line. Since any new-line character next to `[[` or `]]` is ignored, the generated code won't contain this new line.

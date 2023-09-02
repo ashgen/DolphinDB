@@ -36,23 +36,23 @@
 
 namespace {
 
-// An environment that always fails in its SetUp method.
-class FailingEnvironment final : public ::testing::Environment {
- public:
-  void SetUp() override { FAIL() << "Canned environment setup error"; }
-};
+    // An environment that always fails in its SetUp method.
+    class FailingEnvironment final : public ::testing::Environment {
+    public:
+        void SetUp() override { FAIL() << "Canned environment setup error"; }
+    };
 
-// Register the environment.
-auto* const g_environment_ =
-    ::testing::AddGlobalTestEnvironment(new FailingEnvironment);
+    // Register the environment.
+    auto *const g_environment_ =
+            ::testing::AddGlobalTestEnvironment(new FailingEnvironment);
 
-// A test that doesn't actually run.
-TEST(SomeTest, DoesFoo) { FAIL() << "Unexpected call"; }
+    // A test that doesn't actually run.
+    TEST(SomeTest, DoesFoo) { FAIL() << "Unexpected call"; }
 
-}  // namespace
+}// namespace
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
 
-  return RUN_ALL_TESTS();
+    return RUN_ALL_TESTS();
 }

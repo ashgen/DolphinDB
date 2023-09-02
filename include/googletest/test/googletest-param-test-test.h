@@ -48,4 +48,4 @@ class InstantiationInMultipleTranslaionUnitsTest
     : public ::testing::TestWithParam<int> {
 };
 
-#endif  // GTEST_TEST_GTEST_PARAM_TEST_TEST_H_
+#endif// GTEST_TEST_GTEST_PARAM_TEST_TEST_H_

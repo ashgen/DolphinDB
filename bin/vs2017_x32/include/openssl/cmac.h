@@ -53,13 +53,13 @@
  */
 
 #ifndef HEADER_CMAC_H
-# define HEADER_CMAC_H
+#define HEADER_CMAC_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-# include <openssl/evp.h>
+#include <openssl/evp.h>
 
 /* Opaque */
 typedef struct CMAC_CTX_st CMAC_CTX;
@@ -76,7 +76,7 @@ int CMAC_Update(CMAC_CTX *ctx, const void *data, size_t dlen);
 int CMAC_Final(CMAC_CTX *ctx, unsigned char *out, size_t *poutlen);
 int CMAC_resume(CMAC_CTX *ctx);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

@@ -56,13 +56,13 @@
  * [including the GNU Public Licence.]
  */
 
-#ifndef  HEADER_CONF_API_H
-# define HEADER_CONF_API_H
+#ifndef HEADER_CONF_API_H
+#define HEADER_CONF_API_H
 
-# include <openssl/lhash.h>
-# include <openssl/conf.h>
+#include <openssl/conf.h>
+#include <openssl/lhash.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -83,7 +83,7 @@ long _CONF_get_number(const CONF *conf, const char *section,
 int _CONF_new_data(CONF *conf);
 void _CONF_free_data(CONF *conf);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

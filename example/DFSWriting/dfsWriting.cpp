@@ -10,35 +10,38 @@ using namespace dolphindb;
 using namespace std;
 
 TableSP createDemoTable(long rows) {
-    vector < string > colNames = { "cbool", "cchar", "cshort", "cint", "clong", "cdate", "cmonth", "ctime", "cminute", "csecond", "cdatetime", "ctimestamp", "cnanotime",
-            "cnanotimestamp", "cfloat", "cdouble", "csymbol", "cstring", "cuuid", "cip", "cint128" };
-    vector<DATA_TYPE> colTypes = { DT_BOOL, DT_CHAR, DT_SHORT, DT_INT, DT_LONG, DT_DATE, DT_MONTH, DT_TIME, DT_MINUTE, DT_SECOND, DT_DATETIME, DT_TIMESTAMP, DT_NANOTIME,
-            DT_NANOTIMESTAMP, DT_FLOAT, DT_DOUBLE, DT_SYMBOL, DT_STRING, DT_UUID, DT_IP, DT_INT128 };
+    vector<string> colNames = {"cbool", "cchar", "cshort", "cint", "clong", "cdate", "cmonth", "ctime", "cminute",
+                               "csecond", "cdatetime", "ctimestamp", "cnanotime",
+                               "cnanotimestamp", "cfloat", "cdouble", "csymbol", "cstring", "cuuid", "cip", "cint128"};
+    vector<DATA_TYPE> colTypes = {DT_BOOL, DT_CHAR, DT_SHORT, DT_INT, DT_LONG, DT_DATE, DT_MONTH, DT_TIME, DT_MINUTE,
+                                  DT_SECOND, DT_DATETIME, DT_TIMESTAMP, DT_NANOTIME,
+                                  DT_NANOTIMESTAMP, DT_FLOAT, DT_DOUBLE, DT_SYMBOL, DT_STRING, DT_UUID, DT_IP,
+                                  DT_INT128};
     int colNum = 21, rowNum = rows, indexCapacity = rows;
     ConstantSP table = Util::createTable(colNames, colTypes, rowNum, indexCapacity);
     vector<VectorSP> columnVecs;
     for (int i = 0; i < colNum; i++)
         columnVecs.push_back(table->getColumn(i));
-    unsigned char data[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
+    unsigned char data[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
     for (int i = 0; i < rowNum; i++) {
         columnVecs[0]->setBool(i, i % 2);
         columnVecs[1]->setChar(i, i * 2);
         columnVecs[2]->setShort(i, i * 3);
         columnVecs[3]->setInt(i, i * 4);
         columnVecs[4]->setLong(i, i * 5);
-        columnVecs[5]->setInt(i, 18262); //set(i, Util::parseConstant(DT_DATE, "2020.01.01"));
-        columnVecs[6]->setInt(i, 24240); // 2020.01M
+        columnVecs[5]->setInt(i, 18262);//set(i, Util::parseConstant(DT_DATE, "2020.01.01"));
+        columnVecs[6]->setInt(i, 24240);// 2020.01M
         columnVecs[7]->setInt(i, i * 7);
         columnVecs[8]->setInt(i, i * 8);
         columnVecs[9]->setInt(i, i * 9);
-        columnVecs[10]->setInt(i, 1577836800 + i);      // 2020.01.01 00:00:00+i
+        columnVecs[10]->setInt(i, 1577836800 + i);// 2020.01.01 00:00:00+i
         columnVecs[11]->setLong(i, Util::getEpochTime());
         columnVecs[12]->setLong(i, i * 12);
-        columnVecs[13]->setLong(i, 1577836800000000000l + i); // 2020.01.01 00:00:00.000000000+i
+        columnVecs[13]->setLong(i, 1577836800000000000l + i);// 2020.01.01 00:00:00.000000000+i
         columnVecs[14]->setFloat(i, i * 14);
         columnVecs[15]->setDouble(i, i * 15);
-        columnVecs[16]->setString(i, "sym"); //+ to_string(i));
-        columnVecs[17]->setString(i, "abc"); //+ to_string(i));
+        columnVecs[16]->setString(i, "sym");//+ to_string(i));
+        columnVecs[17]->setString(i, "abc");//+ to_string(i));
         data[15] = i;
         columnVecs[18]->setBinary(i, 16, data);
         columnVecs[19]->setBinary(i, 16, data);
@@ -48,10 +51,13 @@ TableSP createDemoTable(long rows) {
 }
 
 TableSP createDemoTable2(long rows) {
-    vector < string > colNames = { "cbool", "cchar", "cshort", "cint", "clong", "cdate", "cmonth", "ctime", "cminute", "csecond", "cdatetime", "ctimestamp", "cnanotime",
-            "cnanotimestamp", "cfloat", "cdouble", "csymbol", "cstring", "cuuid", "cip", "cint128" };
-    vector<DATA_TYPE> colTypes = { DT_BOOL, DT_CHAR, DT_SHORT, DT_INT, DT_LONG, DT_DATE, DT_MONTH, DT_TIME, DT_MINUTE, DT_SECOND, DT_DATETIME, DT_TIMESTAMP, DT_NANOTIME,
-            DT_NANOTIMESTAMP, DT_FLOAT, DT_DOUBLE, DT_SYMBOL, DT_STRING, DT_UUID, DT_IP, DT_INT128 };
+    vector<string> colNames = {"cbool", "cchar", "cshort", "cint", "clong", "cdate", "cmonth", "ctime", "cminute",
+                               "csecond", "cdatetime", "ctimestamp", "cnanotime",
+                               "cnanotimestamp", "cfloat", "cdouble", "csymbol", "cstring", "cuuid", "cip", "cint128"};
+    vector<DATA_TYPE> colTypes = {DT_BOOL, DT_CHAR, DT_SHORT, DT_INT, DT_LONG, DT_DATE, DT_MONTH, DT_TIME, DT_MINUTE,
+                                  DT_SECOND, DT_DATETIME, DT_TIMESTAMP, DT_NANOTIME,
+                                  DT_NANOTIMESTAMP, DT_FLOAT, DT_DOUBLE, DT_SYMBOL, DT_STRING, DT_UUID, DT_IP,
+                                  DT_INT128};
     int colNum = 21, rowNum = rows, indexCapacity = rows;
     ConstantSP table = Util::createTable(colNames, colTypes, rowNum, indexCapacity);
     vector<VectorSP> columnVecs;
@@ -79,7 +85,7 @@ TableSP createDemoTable2(long rows) {
     unsigned char int128Buf[Util::BUF_SIZE * 16];
 
     int start = 0;
-    unsigned char data[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    unsigned char data[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     while (start < rowNum) {
         size_t len = std::min(Util::BUF_SIZE, rowNum - start);
         char *pBool = columnVecs[0]->getBoolBuffer(start, len, boolBuf);
@@ -120,13 +126,12 @@ TableSP createDemoTable2(long rows) {
             pFloat[i] = i * 2;
             pDouble[i] = i * 2;
 
-            columnVecs[16]->setString(i, "sym123"); //+ to_string(i));
-            columnVecs[17]->setString(i, "abc123"); //+ to_string(i));
+            columnVecs[16]->setString(i, "sym123");//+ to_string(i));
+            columnVecs[17]->setString(i, "abc123");//+ to_string(i));
             data[15] = i;
-            memcpy((void*) &pUuid[i * 16], (void*) data, 16);
-            memcpy((void*) &pIp[i * 16], (void*) data, 16);
-            memcpy((void*) &pInt128[i * 16], (void*) data, 16);
-
+            memcpy((void *) &pUuid[i * 16], (void *) data, 16);
+            memcpy((void *) &pIp[i * 16], (void *) data, 16);
+            memcpy((void *) &pInt128[i * 16], (void *) data, 16);
         }
 
         columnVecs[0]->setBool(start, len, pBool);

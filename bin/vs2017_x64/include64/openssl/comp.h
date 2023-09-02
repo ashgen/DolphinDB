@@ -1,35 +1,39 @@
 
 #ifndef HEADER_COMP_H
-# define HEADER_COMP_H
+#define HEADER_COMP_H
 
-# include <openssl/crypto.h>
+#include <openssl/crypto.h>
 
-# ifdef OPENSSL_NO_COMP
-#  error COMP is disabled.
-# endif
+#ifdef OPENSSL_NO_COMP
+#error COMP is disabled.
+#endif
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct comp_ctx_st COMP_CTX;
 
 struct comp_method_st {
-    int type;                   /* NID for compression library */
-    const char *name;           /* A text string to identify the library */
-    int (*init) (COMP_CTX *ctx);
-    void (*finish) (COMP_CTX *ctx);
-    int (*compress) (COMP_CTX *ctx,
-                     unsigned char *out, unsigned int olen,
-                     unsigned char *in, unsigned int ilen);
-    int (*expand) (COMP_CTX *ctx,
-                   unsigned char *out, unsigned int olen,
-                   unsigned char *in, unsigned int ilen);
+    int type;         /* NID for compression library */
+    const char *name; /* A text string to identify the library */
+    int (*init)(COMP_CTX *ctx);
+
+    void (*finish)(COMP_CTX *ctx);
+
+    int (*compress)(COMP_CTX *ctx,
+                    unsigned char *out, unsigned int olen,
+                    unsigned char *in, unsigned int ilen);
+
+    int (*expand)(COMP_CTX *ctx,
+                  unsigned char *out, unsigned int olen,
+                  unsigned char *in, unsigned int ilen);
     /*
      * The following two do NOTHING, but are kept for backward compatibility
      */
-    long (*ctrl) (void);
-    long (*callback_ctrl) (void);
+    long (*ctrl)(void);
+
+    long (*callback_ctrl)(void);
 };
 
 struct comp_ctx_st {
@@ -51,11 +55,11 @@ COMP_METHOD *COMP_rle(void);
 COMP_METHOD *COMP_zlib(void);
 void COMP_zlib_cleanup(void);
 
-# ifdef HEADER_BIO_H
-#  ifdef ZLIB
+#ifdef HEADER_BIO_H
+#ifdef ZLIB
 BIO_METHOD *BIO_f_zlib(void);
-#  endif
-# endif
+#endif
+#endif
 
 /* BEGIN ERROR CODES */
 /*
@@ -67,17 +71,17 @@ void ERR_load_COMP_strings(void);
 /* Error codes for the COMP functions. */
 
 /* Function codes. */
-# define COMP_F_BIO_ZLIB_FLUSH                            99
-# define COMP_F_BIO_ZLIB_NEW                              100
-# define COMP_F_BIO_ZLIB_READ                             101
-# define COMP_F_BIO_ZLIB_WRITE                            102
+#define COMP_F_BIO_ZLIB_FLUSH 99
+#define COMP_F_BIO_ZLIB_NEW 100
+#define COMP_F_BIO_ZLIB_READ 101
+#define COMP_F_BIO_ZLIB_WRITE 102
 
 /* Reason codes. */
-# define COMP_R_ZLIB_DEFLATE_ERROR                        99
-# define COMP_R_ZLIB_INFLATE_ERROR                        100
-# define COMP_R_ZLIB_NOT_SUPPORTED                        101
+#define COMP_R_ZLIB_DEFLATE_ERROR 99
+#define COMP_R_ZLIB_INFLATE_ERROR 100
+#define COMP_R_ZLIB_NOT_SUPPORTED 101
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

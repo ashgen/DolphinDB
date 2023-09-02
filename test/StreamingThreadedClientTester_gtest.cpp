@@ -1,38 +1,31 @@
-namespace STCT
-{
-    class StreamingThreadedClientTester : public testing::Test, public ::testing::WithParamInterface<int>
-    {
+namespace STCT {
+    class StreamingThreadedClientTester : public testing::Test, public ::testing::WithParamInterface<int> {
     public:
         // Suite
-        static void SetUpTestCase()
-        {
+        static void SetUpTestCase() {
             // DBConnection conn;
 
             conn.initialize();
             bool ret = conn.connect(hostName, port, "admin", "123456");
-            if (!ret)
-            {
+            if (!ret) {
                 cout << "Failed to connect to the server" << endl;
-            }
-            else
-            {
+            } else {
                 cout << "connect to " + hostName + ":" + std::to_string(port) << endl;
                 isNewVersion = conn.run("flag = 1;v = split(version(), ' ')[0];\
                                 tmp=int(v.split('.'));\
                                 if((tmp[0]==2 && tmp[1]==00 && tmp[2]>=9 )||(tmp[0]==2 && tmp[1]==10)){flag=1;}else{flag=0};\
                                 flag")
-                                   ->getBool();
+                        ->getBool();
             }
         }
-        static void TearDownTestCase()
-        {
+
+        static void TearDownTestCase() {
             usedPorts.clear();
             conn.close();
         }
 
         // Case
-        virtual void SetUp()
-        {
+        virtual void SetUp() {
             cout << "check connect...";
             ConstantSP res = conn.run("1+1");
 
@@ -43,14 +36,13 @@ namespace STCT
                                      "try{ dropStreamTable(`arrayVectorTable);}catch(ex){};";
             conn.run(del_streamtable);
         }
-        virtual void TearDown()
-        {
+
+        virtual void TearDown() {
             conn.run("undef all;");
         }
     };
 
-    static void createSharedTableAndReplay(int rows)
-    {
+    static void createSharedTableAndReplay(int rows) {
         string script = "login(\"admin\",\"123456\")\n\
                 st1 = streamTable(100:0, `datetimev`timestampv`sym`price1`price2,[DATETIME,TIMESTAMP,SYMBOL,DOUBLE,DOUBLE])\n\
                 enableTableShareAndPersistence(table=st1, tableName=`outTables, asynWrite=true, compress=true, cacheSize=200000, retentionMinutes=180, preCache = 0)\n\
@@ -64,8 +56,7 @@ namespace STCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withAllDataType()
-    {
+    static void createSharedTableAndReplay_withAllDataType() {
         srand(time(NULL));
         int scale32 = rand() % 9;
         int scale64 = rand() % 18;
@@ -88,8 +79,7 @@ namespace STCT
         conn.run(replayScript);
     }
 
-    static void createSharedTableAndReplay_withArrayVector()
-    {
+    static void createSharedTableAndReplay_withArrayVector() {
         string replayScript = "colName =  `ts`cbool`cchar`cshort`cint`clong`cdate`cmonth`ctime`cminute`csecond`cdatetime`ctimestamp`cnanotime`cnanotimestamp`cfloat`cdouble`cipaddr`cuuid`cint128;"
                               "colType = [TIMESTAMP,BOOL[], CHAR[], SHORT[], INT[],LONG[], DATE[], MONTH[], TIME[], MINUTE[], SECOND[], DATETIME[], TIMESTAMP[], NANOTIME[], NANOTIMESTAMP[], FLOAT[], DOUBLE[], IPADDR[], UUID[], INT128[]];"
                               "st1 = streamTable(100:0,colName, colType);"
@@ -109,20 +99,18 @@ namespace STCT
     }
 
     INSTANTIATE_TEST_CASE_P(StreamingReverse, StreamingThreadedClientTester, testing::Values(0, rand() % 1000 + 13000));
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler)
-    {
+    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler
+    ) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+    auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             // cout << msg->getString() << endl;
-            if (msg_total == 1000)
-            {
+        if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -130,12 +118,12 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+    if (!
+    isNewVersion &&listenport
+    == 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0));
-        }
-        else
-        {
+}
+else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0);
             notify.wait();
 
@@ -150,23 +138,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -175,12 +160,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0);
             notify.wait();
 
@@ -195,13 +179,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_tableNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_tableNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             cout << msg->getString() << endl;
         };
@@ -214,15 +197,13 @@ namespace STCT
         EXPECT_ANY_THROW(auto thread = threadedClient.subscribe(hostName, port, onehandler, "", "cppStreamingAPI", 0, false));
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_tableNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_tableNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -235,13 +216,12 @@ namespace STCT
         EXPECT_ANY_THROW(auto thread = threadedClient.subscribe(hostName, port, batchhandler, "", "cppStreamingAPI", 0, false));
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_offsetNegative)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_offsetNegative
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -250,12 +230,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", -1));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", -1);
 
             cout << "total size: " << msg_total << endl;
@@ -268,15 +247,13 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_offsetNegative)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_offsetNegative
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -285,12 +262,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", -1));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", -1);
 
             cout << "total size: " << msg_total << endl;
@@ -355,19 +331,17 @@ namespace STCT
     //     EXPECT_EQ(msg_total,0);
     // }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_filter)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_filter
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += msg->rows();
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -378,12 +352,11 @@ namespace STCT
         ThreadedClient threadedClient(listenport);
         VectorSP filter = Util::createVector(DT_SYMBOL, 1, 1);
         filter->setString(0, "b");
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, filter));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, filter);
             notify.wait();
 
@@ -397,15 +370,13 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_filter)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_filter
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -417,12 +388,11 @@ namespace STCT
         ThreadedClient threadedClient(listenport);
         VectorSP filter = Util::createVector(DT_SYMBOL, 1, 1);
         filter->setString(0, "b");
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, filter));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, filter);
             Util::sleep(2000);
 
@@ -436,21 +406,19 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_msgAsTable)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_msgAsTable
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             EXPECT_EQ(msg->getForm(), 6);
             msg_total += msg->rows();
 
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -459,12 +427,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false, nullptr, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, false, nullptr, true);
             notify.wait();
 
@@ -478,24 +445,21 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_msgAsTable)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_msgAsTable
+) {
         STCT::createSharedTableAndReplay(10000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 EXPECT_EQ(msg->getForm(), 6);
                 cout << "msg_row: " << msg->rows() << endl;
                 msg_total += msg->rows();
             }
-            if (msg_total == 10000)
-            {
+    if (msg_total == 10000) {
                 notify.set();
             }
         };
@@ -504,12 +468,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, false, nullptr, false, 2000, 0.1, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, false, nullptr, false, 2000, 0.1, true);
             notify.wait();
 
@@ -523,20 +486,18 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_allowExists)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_allowExists
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             // cout << msg->getString() << endl;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -545,12 +506,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, false, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0, true, nullptr, false, true);
             notify.wait();
 
@@ -564,23 +524,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_allowExists)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_allowExists
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -589,12 +546,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, true);
             notify.wait();
 
@@ -608,13 +564,11 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_resub_false)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_resub_false
+) {
         int msg_total = 0;
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -627,13 +581,11 @@ namespace STCT
         EXPECT_ANY_THROW(auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, false));
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_resub_true)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_resub_true
+) {
         int msg_total = 0;
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -643,35 +595,31 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true);
             Util::sleep(2000);
             threadedClient.unsubscribe(hostName, port, "outTables", "actionTest");
         }
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_batchSize)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_batchSize
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -680,12 +628,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, 1000));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, 1000);
             notify.wait();
 
@@ -699,23 +646,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_throttle)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_throttle
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -724,12 +668,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, 1000, 1.0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "actionTest", 0, true, nullptr, false, 1000, 1.0);
             notify.wait();
 
@@ -743,13 +686,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_hostNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_hostNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -763,15 +705,13 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_hostNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_hostNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
@@ -786,13 +726,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_portNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_portNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -806,20 +745,18 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_actionNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_actionNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             // cout << msg->getString() << endl;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -828,12 +765,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "", 0);
             notify.wait();
 
@@ -853,23 +789,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_actionNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_actionNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
             }
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -878,12 +811,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "", 0);
             notify.wait();
 
@@ -903,13 +835,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_unsubscribe_onehandler_hostNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_unsubscribe_onehandler_hostNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -918,12 +849,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
 
             cout << "total size: " << msg_total << endl;
@@ -936,13 +866,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_unsubscribe_portNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_unsubscribe_portNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -951,12 +880,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             cout << "total size: " << msg_total << endl;
 
@@ -968,13 +896,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_unsubscribe_tableNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_unsubscribe_tableNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // cout << msg->getString() << endl;
         };
@@ -983,12 +910,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
 
             cout << "total size: " << msg_total << endl;
@@ -1001,20 +927,18 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_unsubscribe_actionNameNull)
-    {
+TEST_P(StreamingThreadedClientTester, test_unsubscribe_actionNameNull
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             // handle msg
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -1023,12 +947,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "actionTest", 0);
             notify.wait();
 
@@ -1049,13 +972,12 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, tes_onehandler_subscribe_twice)
-    {
+TEST_P(StreamingThreadedClientTester, tes_onehandler_subscribe_twice
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             msg_total += 1;
             // handle msg
         };
@@ -1063,12 +985,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0, false));
-        }
-        else
-        {
+} else {
             auto thread1 = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0, false);
             EXPECT_ANY_THROW(auto thread2 = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0, false));
 
@@ -1082,22 +1003,19 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_batchhandler_subscribe_twice)
-    {
+TEST_P(StreamingThreadedClientTester, test_batchhandler_subscribe_twice
+) {
         STCT::createSharedTableAndReplay(1000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
-            for (auto &msg : msgs)
-            {
+auto batchhandler = [&](vector <Message> msgs) {
+    for (auto &msg: msgs) {
                 LockGuard<Mutex> lock(&mutex);
                 msg_total += 1;
                 // handle msg
-                if (msg_total == 1000)
-                {
+        if (msg_total == 1000) {
                     notify.set();
                 }
             }
@@ -1107,12 +1025,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0, false));
-        }
-        else
-        {
+} else {
             auto thread1 = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0, false);
             EXPECT_ANY_THROW(auto thread2 = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0, false));
             notify.wait();
@@ -1127,8 +1044,8 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_withAllDataType)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_withAllDataType
+) {
         STCT::createSharedTableAndReplay_withAllDataType();
         int msg_total = 0;
         TableSP ex_table = conn.run("select * from outTables");
@@ -1136,18 +1053,15 @@ namespace STCT
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             // handle msg
-            for (auto i = 0; i < ex_table->columns(); i++)
-            {
+    for (auto i = 0; i < ex_table->columns(); i++) {
                 EXPECT_EQ(ex_table->getColumn(i)->get(index)->getString(), msg->get(i)->getString());
             }
             index++;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -1155,12 +1069,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0);
             notify.wait();
             cout << "total size: " << msg_total << endl;
@@ -1174,21 +1087,18 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_withAllDataType)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_withAllDataType
+) {
         STCT::createSharedTableAndReplay_withAllDataType();
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 // cout  << msg->getString() << endl;
-                if (msg_total == 1000)
-                {
+        if (msg_total == 1000) {
                     notify.set();
                 }
             }
@@ -1198,12 +1108,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0);
             notify.wait();
 
@@ -1217,8 +1126,8 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_arrayVector)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_onehandler_arrayVector
+) {
         STCT::createSharedTableAndReplay_withArrayVector();
         int msg_total = 0;
         int index = 0;
@@ -1226,15 +1135,13 @@ namespace STCT
         Mutex mutex;
 
         TableSP ex_tab = conn.run("select * from arrayVectorTable");
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             for (auto i = 0; i < ex_tab->columns(); i++)
                 EXPECT_EQ(msg->get(i)->getString(), ex_tab->getColumn(i)->get(index)->getString());
             index++;
-            if (msg_total == 1000)
-            {
+    if (msg_total == 1000) {
                 notify.set();
             }
         };
@@ -1242,12 +1149,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "arrayVectorTable", "arrayVectorTableTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "arrayVectorTable", "arrayVectorTableTest", 0);
             notify.wait();
 
@@ -1261,27 +1167,23 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_arrayVector)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_batchhandler_arrayVector
+) {
         STCT::createSharedTableAndReplay_withArrayVector();
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
         TableSP ex_tab = conn.run("select * from arrayVectorTable");
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
-                for (auto i = 1; i < ex_tab->columns(); i++)
-                {
+        for (auto i = 1; i < ex_tab->columns(); i++) {
                     // EXPECT_EQ(ex_tab->getColumn(i)->getType(), msg->get(i)->getType());
                     EXPECT_EQ(msg->get(i)->getForm(), DF_VECTOR);
                 }
-                if (msg_total == 1000)
-                {
+        if (msg_total == 1000) {
                     notify.set();
                 }
             }
@@ -1291,12 +1193,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "arrayVectorTable", "arrayVectorTableTest", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "arrayVectorTable", "arrayVectorTableTest", 0);
             notify.wait();
 
@@ -1310,22 +1211,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_onehandler)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_onehandler
+) {
         STCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += 1;
             if (msg_total % 100000 == 0)
                 cout << "now subscribed rows: " << msg_total << endl;
             // handle msg
-            if (msg_total == 1000000)
-            {
+    if (msg_total == 1000000) {
                 notify.set();
             }
         };
@@ -1333,12 +1232,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0);
             notify.wait();
 
@@ -1353,24 +1251,21 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_batchhandler)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_batchhandler
+) {
         STCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 msg_total += 1;
                 if (msg_total % 100000 == 0)
                     cout << "now subscribed rows: " << msg_total << endl;
                 // handle msg
-                if (msg_total == 1000000)
-                {
+        if (msg_total == 1000000) {
                     notify.set();
                 }
             }
@@ -1380,12 +1275,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0);
             notify.wait();
 
@@ -1400,22 +1294,20 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_onehandler_msgAsTable)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_onehandler_msgAsTable
+) {
         STCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto onehandler = [&](Message msg)
-        {
+auto onehandler = [&](Message msg) {
             LockGuard<Mutex> lock(&mutex);
             msg_total += msg->rows();
             if (msg_total % 100000 == 0)
                 cout << "now subscribed rows: " << msg_total << endl;
             // handle msg
-            if (msg_total == 1000000)
-            {
+    if (msg_total == 1000000) {
                 notify.set();
             }
         };
@@ -1423,12 +1315,11 @@ namespace STCT
         int listenport = GetParam();
         cout << "current listenport is " << listenport << endl;
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0, false, nullptr, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, onehandler, "outTables", "mutiSchemaOne", 0, false, nullptr, true);
             notify.wait();
 
@@ -1443,25 +1334,22 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-    TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_batchhandler_msgAsTable)
-    {
+TEST_P(StreamingThreadedClientTester, test_subscribe_hugetable_batchhandler_msgAsTable
+) {
         STCT::createSharedTableAndReplay(1000000);
         int msg_total = 0;
         Signal notify;
         Mutex mutex;
 
-        auto batchhandler = [&](vector<Message> msgs)
-        {
+auto batchhandler = [&](vector <Message> msgs) {
             LockGuard<Mutex> lock(&mutex);
-            for (auto &msg : msgs)
-            {
+    for (auto &msg: msgs) {
                 EXPECT_EQ(msg->getForm(), DF_TABLE);
                 msg_total += msg->rows();
                 if (msg_total % 100000 == 0)
                     cout << "now subscribed rows: " << msg_total << endl;
                 // handle msg
-                if (msg_total == 1000000)
-                {
+        if (msg_total == 1000000) {
                     notify.set();
                 }
             }
@@ -1471,12 +1359,11 @@ namespace STCT
         cout << "current listenport is " << listenport << endl;
 
         ThreadedClient threadedClient(listenport);
-        if (!isNewVersion && listenport == 0)
-        {
+if (!
+isNewVersion &&listenport
+== 0) {
             EXPECT_ANY_THROW(threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0, false, nullptr, false, 1, 1.0, true));
-        }
-        else
-        {
+} else {
             auto thread = threadedClient.subscribe(hostName, port, batchhandler, "outTables", "mutiSchemaBatch", 0, false, nullptr, false, 1, 1.0, true);
             notify.wait();
 
@@ -1491,4 +1378,4 @@ namespace STCT
         usedPorts.push_back(listenport);
     }
 
-}
+}// namespace STCT

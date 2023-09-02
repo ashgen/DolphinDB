@@ -58,27 +58,27 @@
  */
 
 #ifndef HEADER_PKCS12_H
-# define HEADER_PKCS12_H
+#define HEADER_PKCS12_H
 
-# include <openssl/bio.h>
-# include <openssl/x509.h>
+#include <openssl/bio.h>
+#include <openssl/x509.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-# define PKCS12_KEY_ID   1
-# define PKCS12_IV_ID    2
-# define PKCS12_MAC_ID   3
+#define PKCS12_KEY_ID 1
+#define PKCS12_IV_ID 2
+#define PKCS12_MAC_ID 3
 
 /* Default iteration count */
-# ifndef PKCS12_DEFAULT_ITER
-#  define PKCS12_DEFAULT_ITER     PKCS5_DEFAULT_ITER
-# endif
+#ifndef PKCS12_DEFAULT_ITER
+#define PKCS12_DEFAULT_ITER PKCS5_DEFAULT_ITER
+#endif
 
-# define PKCS12_MAC_KEY_LENGTH 20
+#define PKCS12_MAC_KEY_LENGTH 20
 
-# define PKCS12_SALT_LEN 8
+#define PKCS12_SALT_LEN 8
 
 /* Uncomment out next line for unicode password and names, otherwise ASCII */
 
@@ -86,23 +86,23 @@ extern "C" {
  * #define PBE_UNICODE
  */
 
-# ifdef PBE_UNICODE
-#  define PKCS12_key_gen PKCS12_key_gen_uni
-#  define PKCS12_add_friendlyname PKCS12_add_friendlyname_uni
-# else
-#  define PKCS12_key_gen PKCS12_key_gen_asc
-#  define PKCS12_add_friendlyname PKCS12_add_friendlyname_asc
-# endif
+#ifdef PBE_UNICODE
+#define PKCS12_key_gen PKCS12_key_gen_uni
+#define PKCS12_add_friendlyname PKCS12_add_friendlyname_uni
+#else
+#define PKCS12_key_gen PKCS12_key_gen_asc
+#define PKCS12_add_friendlyname PKCS12_add_friendlyname_asc
+#endif
 
 /* MS key usage constants */
 
-# define KEY_EX  0x10
-# define KEY_SIG 0x80
+#define KEY_EX 0x10
+#define KEY_SIG 0x80
 
 typedef struct {
     X509_SIG *dinfo;
     ASN1_OCTET_STRING *salt;
-    ASN1_INTEGER *iter;         /* defaults to 1 */
+    ASN1_INTEGER *iter; /* defaults to 1 */
 } PKCS12_MAC_DATA;
 
 typedef struct {
@@ -114,9 +114,9 @@ typedef struct {
 typedef struct {
     ASN1_OBJECT *type;
     union {
-        struct pkcs12_bag_st *bag; /* secret, crl and certbag */
+        struct pkcs12_bag_st *bag;             /* secret, crl and certbag */
         struct pkcs8_priv_key_info_st *keybag; /* keybag */
-        X509_SIG *shkeybag;     /* shrouded key bag */
+        X509_SIG *shkeybag;                    /* shrouded key bag */
         STACK_OF(PKCS12_SAFEBAG) *safes;
         ASN1_TYPE *other;
     } value;
@@ -134,40 +134,40 @@ typedef struct pkcs12_bag_st {
         ASN1_OCTET_STRING *x509crl;
         ASN1_OCTET_STRING *octet;
         ASN1_IA5STRING *sdsicert;
-        ASN1_TYPE *other;       /* Secret or other bag */
+        ASN1_TYPE *other; /* Secret or other bag */
     } value;
 } PKCS12_BAGS;
 
-# define PKCS12_ERROR    0
-# define PKCS12_OK       1
+#define PKCS12_ERROR 0
+#define PKCS12_OK 1
 
 /* Compatibility macros */
 
-# define M_PKCS12_x5092certbag PKCS12_x5092certbag
-# define M_PKCS12_x509crl2certbag PKCS12_x509crl2certbag
+#define M_PKCS12_x5092certbag PKCS12_x5092certbag
+#define M_PKCS12_x509crl2certbag PKCS12_x509crl2certbag
 
-# define M_PKCS12_certbag2x509 PKCS12_certbag2x509
-# define M_PKCS12_certbag2x509crl PKCS12_certbag2x509crl
+#define M_PKCS12_certbag2x509 PKCS12_certbag2x509
+#define M_PKCS12_certbag2x509crl PKCS12_certbag2x509crl
 
-# define M_PKCS12_unpack_p7data PKCS12_unpack_p7data
-# define M_PKCS12_pack_authsafes PKCS12_pack_authsafes
-# define M_PKCS12_unpack_authsafes PKCS12_unpack_authsafes
-# define M_PKCS12_unpack_p7encdata PKCS12_unpack_p7encdata
+#define M_PKCS12_unpack_p7data PKCS12_unpack_p7data
+#define M_PKCS12_pack_authsafes PKCS12_pack_authsafes
+#define M_PKCS12_unpack_authsafes PKCS12_unpack_authsafes
+#define M_PKCS12_unpack_p7encdata PKCS12_unpack_p7encdata
 
-# define M_PKCS12_decrypt_skey PKCS12_decrypt_skey
-# define M_PKCS8_decrypt PKCS8_decrypt
+#define M_PKCS12_decrypt_skey PKCS12_decrypt_skey
+#define M_PKCS8_decrypt PKCS8_decrypt
 
-# define M_PKCS12_bag_type(bg) OBJ_obj2nid((bg)->type)
-# define M_PKCS12_cert_bag_type(bg) OBJ_obj2nid((bg)->value.bag->type)
-# define M_PKCS12_crl_bag_type M_PKCS12_cert_bag_type
+#define M_PKCS12_bag_type(bg) OBJ_obj2nid((bg)->type)
+#define M_PKCS12_cert_bag_type(bg) OBJ_obj2nid((bg)->value.bag->type)
+#define M_PKCS12_crl_bag_type M_PKCS12_cert_bag_type
 
-# define PKCS12_get_attr(bag, attr_nid) \
-                         PKCS12_get_attr_gen(bag->attrib, attr_nid)
+#define PKCS12_get_attr(bag, attr_nid) \
+    PKCS12_get_attr_gen(bag->attrib, attr_nid)
 
-# define PKCS8_get_attr(p8, attr_nid) \
-                PKCS12_get_attr_gen(p8->attributes, attr_nid)
+#define PKCS8_get_attr(p8, attr_nid) \
+    PKCS12_get_attr_gen(p8->attributes, attr_nid)
 
-# define PKCS12_mac_present(p12) ((p12)->mac ? 1 : 0)
+#define PKCS12_mac_present(p12) ((p12)->mac ? 1 : 0)
 
 PKCS12_SAFEBAG *PKCS12_x5092certbag(X509 *x509);
 PKCS12_SAFEBAG *PKCS12_x509crl2certbag(X509_CRL *crl);
@@ -282,61 +282,61 @@ void ERR_load_PKCS12_strings(void);
 /* Error codes for the PKCS12 functions. */
 
 /* Function codes. */
-# define PKCS12_F_PARSE_BAG                               129
-# define PKCS12_F_PARSE_BAGS                              103
-# define PKCS12_F_PKCS12_ADD_FRIENDLYNAME                 100
-# define PKCS12_F_PKCS12_ADD_FRIENDLYNAME_ASC             127
-# define PKCS12_F_PKCS12_ADD_FRIENDLYNAME_UNI             102
-# define PKCS12_F_PKCS12_ADD_LOCALKEYID                   104
-# define PKCS12_F_PKCS12_CREATE                           105
-# define PKCS12_F_PKCS12_GEN_MAC                          107
-# define PKCS12_F_PKCS12_INIT                             109
-# define PKCS12_F_PKCS12_ITEM_DECRYPT_D2I                 106
-# define PKCS12_F_PKCS12_ITEM_I2D_ENCRYPT                 108
-# define PKCS12_F_PKCS12_ITEM_PACK_SAFEBAG                117
-# define PKCS12_F_PKCS12_KEY_GEN_ASC                      110
-# define PKCS12_F_PKCS12_KEY_GEN_UNI                      111
-# define PKCS12_F_PKCS12_MAKE_KEYBAG                      112
-# define PKCS12_F_PKCS12_MAKE_SHKEYBAG                    113
-# define PKCS12_F_PKCS12_NEWPASS                          128
-# define PKCS12_F_PKCS12_PACK_P7DATA                      114
-# define PKCS12_F_PKCS12_PACK_P7ENCDATA                   115
-# define PKCS12_F_PKCS12_PARSE                            118
-# define PKCS12_F_PKCS12_PBE_CRYPT                        119
-# define PKCS12_F_PKCS12_PBE_KEYIVGEN                     120
-# define PKCS12_F_PKCS12_SETUP_MAC                        122
-# define PKCS12_F_PKCS12_SET_MAC                          123
-# define PKCS12_F_PKCS12_UNPACK_AUTHSAFES                 130
-# define PKCS12_F_PKCS12_UNPACK_P7DATA                    131
-# define PKCS12_F_PKCS12_VERIFY_MAC                       126
-# define PKCS12_F_PKCS8_ADD_KEYUSAGE                      124
-# define PKCS12_F_PKCS8_ENCRYPT                           125
+#define PKCS12_F_PARSE_BAG 129
+#define PKCS12_F_PARSE_BAGS 103
+#define PKCS12_F_PKCS12_ADD_FRIENDLYNAME 100
+#define PKCS12_F_PKCS12_ADD_FRIENDLYNAME_ASC 127
+#define PKCS12_F_PKCS12_ADD_FRIENDLYNAME_UNI 102
+#define PKCS12_F_PKCS12_ADD_LOCALKEYID 104
+#define PKCS12_F_PKCS12_CREATE 105
+#define PKCS12_F_PKCS12_GEN_MAC 107
+#define PKCS12_F_PKCS12_INIT 109
+#define PKCS12_F_PKCS12_ITEM_DECRYPT_D2I 106
+#define PKCS12_F_PKCS12_ITEM_I2D_ENCRYPT 108
+#define PKCS12_F_PKCS12_ITEM_PACK_SAFEBAG 117
+#define PKCS12_F_PKCS12_KEY_GEN_ASC 110
+#define PKCS12_F_PKCS12_KEY_GEN_UNI 111
+#define PKCS12_F_PKCS12_MAKE_KEYBAG 112
+#define PKCS12_F_PKCS12_MAKE_SHKEYBAG 113
+#define PKCS12_F_PKCS12_NEWPASS 128
+#define PKCS12_F_PKCS12_PACK_P7DATA 114
+#define PKCS12_F_PKCS12_PACK_P7ENCDATA 115
+#define PKCS12_F_PKCS12_PARSE 118
+#define PKCS12_F_PKCS12_PBE_CRYPT 119
+#define PKCS12_F_PKCS12_PBE_KEYIVGEN 120
+#define PKCS12_F_PKCS12_SETUP_MAC 122
+#define PKCS12_F_PKCS12_SET_MAC 123
+#define PKCS12_F_PKCS12_UNPACK_AUTHSAFES 130
+#define PKCS12_F_PKCS12_UNPACK_P7DATA 131
+#define PKCS12_F_PKCS12_VERIFY_MAC 126
+#define PKCS12_F_PKCS8_ADD_KEYUSAGE 124
+#define PKCS12_F_PKCS8_ENCRYPT 125
 
 /* Reason codes. */
-# define PKCS12_R_CANT_PACK_STRUCTURE                     100
-# define PKCS12_R_CONTENT_TYPE_NOT_DATA                   121
-# define PKCS12_R_DECODE_ERROR                            101
-# define PKCS12_R_ENCODE_ERROR                            102
-# define PKCS12_R_ENCRYPT_ERROR                           103
-# define PKCS12_R_ERROR_SETTING_ENCRYPTED_DATA_TYPE       120
-# define PKCS12_R_INVALID_NULL_ARGUMENT                   104
-# define PKCS12_R_INVALID_NULL_PKCS12_POINTER             105
-# define PKCS12_R_IV_GEN_ERROR                            106
-# define PKCS12_R_KEY_GEN_ERROR                           107
-# define PKCS12_R_MAC_ABSENT                              108
-# define PKCS12_R_MAC_GENERATION_ERROR                    109
-# define PKCS12_R_MAC_SETUP_ERROR                         110
-# define PKCS12_R_MAC_STRING_SET_ERROR                    111
-# define PKCS12_R_MAC_VERIFY_ERROR                        112
-# define PKCS12_R_MAC_VERIFY_FAILURE                      113
-# define PKCS12_R_PARSE_ERROR                             114
-# define PKCS12_R_PKCS12_ALGOR_CIPHERINIT_ERROR           115
-# define PKCS12_R_PKCS12_CIPHERFINAL_ERROR                116
-# define PKCS12_R_PKCS12_PBE_CRYPT_ERROR                  117
-# define PKCS12_R_UNKNOWN_DIGEST_ALGORITHM                118
-# define PKCS12_R_UNSUPPORTED_PKCS12_MODE                 119
+#define PKCS12_R_CANT_PACK_STRUCTURE 100
+#define PKCS12_R_CONTENT_TYPE_NOT_DATA 121
+#define PKCS12_R_DECODE_ERROR 101
+#define PKCS12_R_ENCODE_ERROR 102
+#define PKCS12_R_ENCRYPT_ERROR 103
+#define PKCS12_R_ERROR_SETTING_ENCRYPTED_DATA_TYPE 120
+#define PKCS12_R_INVALID_NULL_ARGUMENT 104
+#define PKCS12_R_INVALID_NULL_PKCS12_POINTER 105
+#define PKCS12_R_IV_GEN_ERROR 106
+#define PKCS12_R_KEY_GEN_ERROR 107
+#define PKCS12_R_MAC_ABSENT 108
+#define PKCS12_R_MAC_GENERATION_ERROR 109
+#define PKCS12_R_MAC_SETUP_ERROR 110
+#define PKCS12_R_MAC_STRING_SET_ERROR 111
+#define PKCS12_R_MAC_VERIFY_ERROR 112
+#define PKCS12_R_MAC_VERIFY_FAILURE 113
+#define PKCS12_R_PARSE_ERROR 114
+#define PKCS12_R_PKCS12_ALGOR_CIPHERINIT_ERROR 115
+#define PKCS12_R_PKCS12_CIPHERFINAL_ERROR 116
+#define PKCS12_R_PKCS12_PBE_CRYPT_ERROR 117
+#define PKCS12_R_UNKNOWN_DIGEST_ALGORITHM 118
+#define PKCS12_R_UNSUPPORTED_PKCS12_MODE 119
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

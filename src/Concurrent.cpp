@@ -5,11 +5,11 @@
  *      Author: dzhou
  */
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 #ifdef MAC
-	#include <errno.h>
+#include <errno.h>
 #endif
 
 #include "Concurrent.h"
@@ -17,494 +17,495 @@
 
 namespace dolphindb {
 
-Runnable::Runnable():status_(0){}
+    Runnable::Runnable() : status_(0) {}
 
-Runnable::~Runnable(){}
+    Runnable::~Runnable() {}
 
-void Runnable::start(){
-	status_ = 1;
-	run();
-	status_ = 2;
-}
+    void Runnable::start() {
+        status_ = 1;
+        run();
+        status_ = 2;
+    }
 
-bool Runnable::isRunning(){
-	return status_.load() == 1;
-}
+    bool Runnable::isRunning() {
+        return status_.load() == 1;
+    }
 
-bool Runnable::isStarted(){
-	return status_.load() >= 1;
-}
+    bool Runnable::isStarted() {
+        return status_.load() >= 1;
+    }
 
-bool Runnable::isComplete(){
-	return status_.load() == 2;
-}
+    bool Runnable::isComplete() {
+        return status_.load() == 2;
+    }
 
-Mutex::Mutex(){
+    Mutex::Mutex() {
 #ifdef WINDOWS
-	InitializeCriticalSection(&mutex_);
+        InitializeCriticalSection(&mutex_);
 #else
-	pthread_mutexattr_init(&attr_);
-	pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&mutex_, &attr_);
+        pthread_mutexattr_init(&attr_);
+        pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&mutex_, &attr_);
 #endif
-}
+    }
 
-Mutex::~Mutex(){
+    Mutex::~Mutex() {
 #ifdef WINDOWS
-	DeleteCriticalSection(&mutex_);;
+        DeleteCriticalSection(&mutex_);
+        ;
 #else
-	pthread_mutex_destroy(&mutex_);
-	pthread_mutexattr_destroy(&attr_);
+        pthread_mutex_destroy(&mutex_);
+        pthread_mutexattr_destroy(&attr_);
 #endif
-}
+    }
 
-void Mutex::lock(){
+    void Mutex::lock() {
 #ifdef WINDOWS
-	EnterCriticalSection(&mutex_);
+        EnterCriticalSection(&mutex_);
 #else
-	pthread_mutex_lock(&mutex_);
+        pthread_mutex_lock(&mutex_);
 #endif
-}
+    }
 
-bool Mutex::tryLock(){
+    bool Mutex::tryLock() {
 #ifdef WINDOWS
-	return TryEnterCriticalSection(&mutex_);
+        return TryEnterCriticalSection(&mutex_);
 #else
-	return pthread_mutex_trylock(&mutex_)==0;
+        return pthread_mutex_trylock(&mutex_) == 0;
 #endif
-}
+    }
 
-void Mutex::unlock(){
+    void Mutex::unlock() {
 #ifdef WINDOWS
-	LeaveCriticalSection(&mutex_);
+        LeaveCriticalSection(&mutex_);
 #else
-	pthread_mutex_unlock(&mutex_);
+        pthread_mutex_unlock(&mutex_);
 #endif
-}
+    }
 
-RWLock::RWLock(){
+    RWLock::RWLock() {
 #ifdef WINDOWS
-	InitializeSRWLock(&lock_);
+        InitializeSRWLock(&lock_);
 #else
-	int rc = pthread_rwlock_init(&lock_, NULL);
-	if(rc != 0)
-		throw RuntimeException("Failed to initialize read write lock with errCode " + std::to_string(rc));
+        int rc = pthread_rwlock_init(&lock_, NULL);
+        if (rc != 0)
+            throw RuntimeException("Failed to initialize read write lock with errCode " + std::to_string(rc));
 #endif
-}
+    }
 
-RWLock::~RWLock(){
+    RWLock::~RWLock() {
 #ifndef WINDOWS
-	pthread_rwlock_destroy(&lock_);
+        pthread_rwlock_destroy(&lock_);
 #endif
-}
+    }
 
-void RWLock::acquireRead() {
+    void RWLock::acquireRead() {
 #ifdef WINDOWS
-	AcquireSRWLockShared(&lock_);
+        AcquireSRWLockShared(&lock_);
 #else
-	int rc;
-lockagain:
-	rc = pthread_rwlock_rdlock(&lock_);
-	if (rc != 0) {
-		if (rc == EAGAIN)
-			goto lockagain;
-		throw RuntimeException("Failed to acquire shared lock with errCode " + std::to_string(rc));
-	}
+        int rc;
+        lockagain:
+        rc = pthread_rwlock_rdlock(&lock_);
+        if (rc != 0) {
+            if (rc == EAGAIN)
+                goto lockagain;
+            throw RuntimeException("Failed to acquire shared lock with errCode " + std::to_string(rc));
+        }
 #endif
-}
+    }
 
-void RWLock::acquireWrite() {
+    void RWLock::acquireWrite() {
 #ifdef WINDOWS
-	AcquireSRWLockExclusive(&lock_);
+        AcquireSRWLockExclusive(&lock_);
 #else
-	int rc;
-lockagain:
-	rc = pthread_rwlock_wrlock(&lock_);
-	if (rc != 0) {
-		if (rc == EAGAIN)
-			goto lockagain;
-		throw RuntimeException("Failed to acquire exclusive lock with errCode " + std::to_string(rc));
-	}
+        int rc;
+        lockagain:
+        rc = pthread_rwlock_wrlock(&lock_);
+        if (rc != 0) {
+            if (rc == EAGAIN)
+                goto lockagain;
+            throw RuntimeException("Failed to acquire exclusive lock with errCode " + std::to_string(rc));
+        }
 #endif
-}
+    }
 
-bool RWLock::tryAcquireRead(){
+    bool RWLock::tryAcquireRead() {
 #ifdef WINDOWS
-	return TryAcquireSRWLockShared(&lock_);
+        return TryAcquireSRWLockShared(&lock_);
 #else
-	return pthread_rwlock_tryrdlock(&lock_) == 0;
+        return pthread_rwlock_tryrdlock(&lock_) == 0;
 #endif
-}
+    }
 
-bool RWLock::tryAcquireWrite(){
+    bool RWLock::tryAcquireWrite() {
 #ifdef WINDOWS
-	return TryAcquireSRWLockExclusive(&lock_);
+        return TryAcquireSRWLockExclusive(&lock_);
 #else
-	return  pthread_rwlock_trywrlock(&lock_) == 0;
+        return pthread_rwlock_trywrlock(&lock_) == 0;
 #endif
-}
+    }
 
-void RWLock::releaseRead(){
+    void RWLock::releaseRead() {
 #ifdef WINDOWS
-	ReleaseSRWLockShared(&lock_);
+        ReleaseSRWLockShared(&lock_);
 #else
-	int rc = pthread_rwlock_unlock(&lock_);
-	if(rc != 0)
-		throw RuntimeException("Failed to release shared lock with errCode " + std::to_string(rc));
+        int rc = pthread_rwlock_unlock(&lock_);
+        if (rc != 0)
+            throw RuntimeException("Failed to release shared lock with errCode " + std::to_string(rc));
 #endif
-}
+    }
 
-void RWLock::releaseWrite(){
+    void RWLock::releaseWrite() {
 #ifdef WINDOWS
-	ReleaseSRWLockExclusive(&lock_);
+        ReleaseSRWLockExclusive(&lock_);
 #else
-	int rc = pthread_rwlock_unlock(&lock_);
-	if(rc != 0)
-		throw RuntimeException("Failed to release exclusive lock with errCode " + std::to_string(rc));
+        int rc = pthread_rwlock_unlock(&lock_);
+        if (rc != 0)
+            throw RuntimeException("Failed to release exclusive lock with errCode " + std::to_string(rc));
 #endif
-}
+    }
 
 
-ConditionalVariable::ConditionalVariable(){
+    ConditionalVariable::ConditionalVariable() {
 #ifdef WINDOWS
-	InitializeConditionVariable (&conditionalVariable_);
+        InitializeConditionVariable(&conditionalVariable_);
 #else
-	pthread_cond_init (&conditionalVariable_, NULL);
+        pthread_cond_init(&conditionalVariable_, NULL);
 #endif
-}
+    }
 
-ConditionalVariable::~ConditionalVariable(){
+    ConditionalVariable::~ConditionalVariable() {
 #ifdef WINDOWS
 
 #else
-	pthread_cond_destroy(&conditionalVariable_);
+        pthread_cond_destroy(&conditionalVariable_);
 #endif
-}
+    }
 
-void ConditionalVariable::wait(Mutex& mutex){
+    void ConditionalVariable::wait(Mutex &mutex) {
 #ifdef WINDOWS
-	SleepConditionVariableCS(&conditionalVariable_, &mutex.mutex_, INFINITE);
+        SleepConditionVariableCS(&conditionalVariable_, &mutex.mutex_, INFINITE);
 #else
-	pthread_cond_wait(&conditionalVariable_, &mutex.mutex_);
+        pthread_cond_wait(&conditionalVariable_, &mutex.mutex_);
 #endif
-}
+    }
 
-bool ConditionalVariable::wait(Mutex& mutex, int milliSeconds){
+    bool ConditionalVariable::wait(Mutex &mutex, int milliSeconds) {
 #ifdef WINDOWS
-	return SleepConditionVariableCS(&conditionalVariable_, &mutex.mutex_, milliSeconds);
+        return SleepConditionVariableCS(&conditionalVariable_, &mutex.mutex_, milliSeconds);
 #else
-	struct timespec curTime;
-	clock_gettime(CLOCK_REALTIME, &curTime);
-	long long ns = curTime.tv_nsec + (long long)milliSeconds * 1000000ll;
-	curTime.tv_sec += ns / 1000000000;
-	curTime.tv_nsec = ns % 1000000000;
-	return pthread_cond_timedwait(&conditionalVariable_, &mutex.mutex_, &curTime) == 0;
+        struct timespec curTime;
+        clock_gettime(CLOCK_REALTIME, &curTime);
+        long long ns = curTime.tv_nsec + (long long) milliSeconds * 1000000ll;
+        curTime.tv_sec += ns / 1000000000;
+        curTime.tv_nsec = ns % 1000000000;
+        return pthread_cond_timedwait(&conditionalVariable_, &mutex.mutex_, &curTime) == 0;
 #endif
-}
+    }
 
-void ConditionalVariable::notify(){
+    void ConditionalVariable::notify() {
 #ifdef WINDOWS
-	WakeConditionVariable(&conditionalVariable_);
+        WakeConditionVariable(&conditionalVariable_);
 #else
-	pthread_cond_signal(&conditionalVariable_);
+        pthread_cond_signal(&conditionalVariable_);
 #endif
-}
+    }
 
-void ConditionalVariable::notifyAll(){
+    void ConditionalVariable::notifyAll() {
 #ifdef WINDOWS
-	WakeAllConditionVariable(&conditionalVariable_);
+        WakeAllConditionVariable(&conditionalVariable_);
 #else
-	pthread_cond_broadcast(&conditionalVariable_);
+        pthread_cond_broadcast(&conditionalVariable_);
 #endif
-}
+    }
 
-void CountDownLatch::wait(){
-	LockGuard<Mutex> lock(&mutex_);
-	while (count_ > 0){
-		condition_.wait(mutex_);
-	}
-}
+    void CountDownLatch::wait() {
+        LockGuard<Mutex> lock(&mutex_);
+        while (count_ > 0) {
+            condition_.wait(mutex_);
+        }
+    }
 
-bool CountDownLatch::wait(int milliseconds){
-	LockGuard<Mutex> lock(&mutex_);
-	long long expire = std::chrono::steady_clock::now().time_since_epoch()/std::chrono::nanoseconds(1) + milliseconds * 1000000ll;
-	int remaining = milliseconds;
-	while (count_ > 0 && remaining > 0){
-		condition_.wait(mutex_, remaining);
-		remaining = (expire - std::chrono::steady_clock::now().time_since_epoch()/std::chrono::nanoseconds(1) + 500000) / 1000000;
-	}
-	return count_ == 0;
-}
+    bool CountDownLatch::wait(int milliseconds) {
+        LockGuard<Mutex> lock(&mutex_);
+        long long expire = std::chrono::steady_clock::now().time_since_epoch() / std::chrono::nanoseconds(1) +
+                           milliseconds * 1000000ll;
+        int remaining = milliseconds;
+        while (count_ > 0 && remaining > 0) {
+            condition_.wait(mutex_, remaining);
+            remaining = (expire - std::chrono::steady_clock::now().time_since_epoch() / std::chrono::nanoseconds(1) +
+                         500000) / 1000000;
+        }
+        return count_ == 0;
+    }
 
-void CountDownLatch::countDown(){
-	LockGuard<Mutex> lock(&mutex_);
-	--count_;
-	if (count_ == 0){
-		condition_.notifyAll();
-	}
-}
+    void CountDownLatch::countDown() {
+        LockGuard<Mutex> lock(&mutex_);
+        --count_;
+        if (count_ == 0) {
+            condition_.notifyAll();
+        }
+    }
 
-void CountDownLatch::clear(){
-	LockGuard<Mutex> lock(&mutex_);
-	count_ = 0;
-	condition_.notifyAll();
-}
+    void CountDownLatch::clear() {
+        LockGuard<Mutex> lock(&mutex_);
+        count_ = 0;
+        condition_.notifyAll();
+    }
 
-bool CountDownLatch::resetCount(int count) {
-	LockGuard<Mutex> lock(&mutex_);
-	if(count_ > 0 || count <= 0)
-		return false;
-	count_ = count;
-	return true;
-}
+    bool CountDownLatch::resetCount(int count) {
+        LockGuard<Mutex> lock(&mutex_);
+        if (count_ > 0 || count <= 0)
+            return false;
+        count_ = count;
+        return true;
+    }
 
-int CountDownLatch::getCount() const{
-	LockGuard<Mutex> lock(&mutex_);
-	return count_;
-}
+    int CountDownLatch::getCount() const {
+        LockGuard<Mutex> lock(&mutex_);
+        return count_;
+    }
 
 #ifdef MAC
-Mutex Semaphore::globalIdMutex_;
+    Mutex Semaphore::globalIdMutex_;
 #endif
-Semaphore::Semaphore(int resources){
-	//if(resources < 1)
-	//	throw RuntimeException("Semaphore resource number must be positive.");
+
+    Semaphore::Semaphore(int resources) {
+        //if(resources < 1)
+        //	throw RuntimeException("Semaphore resource number must be positive.");
 
 #ifdef WINDOWS
-	if (resources == 0) {
-		sem_ = CreateSemaphore(NULL, 0, LONG_MAX, NULL);
-	}
-	else {
+        if (resources == 0) {
+            sem_ = CreateSemaphore(NULL, 0, LONG_MAX, NULL);
+        } else {
 #ifdef UNICODE
-		std::wstring text = std::to_wstring(resources) + L"_DDB_SEM";
-		sem_ = CreateSemaphore(NULL, 0, LONG_MAX, text.data());
+            std::wstring text = std::to_wstring(resources) + L"_DDB_SEM";
+            sem_ = CreateSemaphore(NULL, 0, LONG_MAX, text.data());
 #else
-		std::string text = std::to_string(resources) + "DDB_SEM_";
-		sem_ = CreateSemaphore(NULL, 0, LONG_MAX, text.data());
+            std::string text = std::to_string(resources) + "DDB_SEM_";
+            sem_ = CreateSemaphore(NULL, 0, LONG_MAX, text.data());
 #endif
-	}
-	if(sem_ == NULL)
-		throw RuntimeException("Failed to create semaphore with error code " + std::to_string(GetLastError()));
+        }
+        if (sem_ == NULL)
+            throw RuntimeException("Failed to create semaphore with error code " + std::to_string(GetLastError()));
 #elif defined MAC
-	// std::atomic<long long>
-	string sem_name;
-	{
-		LockGuard<Mutex> guard(&globalIdMutex_);
-		sem_name = std::to_string(sem_id_++);
-	}
-	
-	sem_ = sem_open(sem_name.c_str(), O_CREAT, 0666, resources);
-	if (sem_ == SEM_FAILED){
-		int err = errno;
-		throw RuntimeException("Failed to create semaphore with error code " + std::to_string(err) + "yyyyyyy");
-	}
-	// sem_ = *(sem_tmp);
-#else
-	int ret = sem_init(&sem_, 0,resources);
-	if(ret != 0){
-		int err = errno;
-		throw RuntimeException("Failed to create semaphore with error code " + std::to_string(err));
-	}
-#endif
-}
+        // std::atomic<long long>
+        string sem_name;
+        {
+            LockGuard<Mutex> guard(&globalIdMutex_);
+            sem_name = std::to_string(sem_id_++);
+        }
 
-Semaphore::~Semaphore(){
-#ifdef WINDOWS
-	CloseHandle(sem_);
-#elif defined MAC
-	sem_close(sem_);
+        sem_ = sem_open(sem_name.c_str(), O_CREAT, 0666, resources);
+        if (sem_ == SEM_FAILED) {
+            int err = errno;
+            throw RuntimeException("Failed to create semaphore with error code " + std::to_string(err) + "yyyyyyy");
+        }
+        // sem_ = *(sem_tmp);
 #else
-	sem_destroy(&sem_);
+        int ret = sem_init(&sem_, 0, resources);
+        if (ret != 0) {
+            int err = errno;
+            throw RuntimeException("Failed to create semaphore with error code " + std::to_string(err));
+        }
 #endif
-}
+    }
 
-void Semaphore::acquire(){
+    Semaphore::~Semaphore() {
 #ifdef WINDOWS
-	DWORD ret = WaitForSingleObject(sem_, INFINITE);
-	if(ret != WAIT_OBJECT_0)
-		throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(GetLastError()));
+        CloseHandle(sem_);
 #elif defined MAC
-	int ret = sem_wait(sem_);
-	if(ret != 0){
-		int err = errno;
-		throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(err));
-	}
+        sem_close(sem_);
 #else
-	
-	int ret = sem_wait(&sem_);
-	if(ret != 0){
-		int err = errno;
-		throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(err));
-	}
+        sem_destroy(&sem_);
 #endif
-}
+    }
+
+    void Semaphore::acquire() {
+#ifdef WINDOWS
+        DWORD ret = WaitForSingleObject(sem_, INFINITE);
+        if (ret != WAIT_OBJECT_0)
+            throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(GetLastError()));
+#elif defined MAC
+        int ret = sem_wait(sem_);
+        if (ret != 0) {
+            int err = errno;
+            throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(err));
+        }
+#else
+
+        int ret = sem_wait(&sem_);
+        if (ret != 0) {
+            int err = errno;
+            throw RuntimeException("Failed to acquire semaphore with error code " + std::to_string(err));
+        }
+#endif
+    }
 
 #ifdef MAC
-unsigned long long GetClockTimeMS(void){
-	unsigned long long msTime;
-	struct timespec curTime;
+    unsigned long long GetClockTimeMS(void) {
+        unsigned long long msTime;
+        struct timespec curTime;
 
-	clock_gettime(CLOCK_MONOTONIC_RAW, &curTime);
-	msTime = curTime.tv_sec;
-	msTime *= 1000;
-	msTime += curTime.tv_nsec/1000000;
-	return msTime;
-}
+        clock_gettime(CLOCK_MONOTONIC_RAW, &curTime);
+        msTime = curTime.tv_sec;
+        msTime *= 1000;
+        msTime += curTime.tv_nsec / 1000000;
+        return msTime;
+    }
 
-int SleepEx(int ms){
-	struct timeval timeout;
-	timeout.tv_sec = ms/1000;
-	timeout.tv_usec = (ms%1000)*1000;
-	if(-1 == select(0, NULL, NULL, NULL, &timeout)){
-		return errno;
-	}
-	return 0;
-}
+    int SleepEx(int ms) {
+        struct timeval timeout;
+        timeout.tv_sec = ms / 1000;
+        timeout.tv_usec = (ms % 1000) * 1000;
+        if (-1 == select(0, NULL, NULL, NULL, &timeout)) {
+            return errno;
+        }
+        return 0;
+    }
 
-int WaitEvent(sem_t *hEvent, unsigned int milliseconds){
-	int ret;
-	unsigned long long timeout = milliseconds;
-	unsigned long long beg = GetClockTimeMS();
-	do{
-		if(0 == sem_trywait((sem_t *)hEvent)){
-			return 0;
-		}
-		ret = errno;
-		if(EAGAIN != ret){
-			return ret;
-		}
-		if(GetClockTimeMS()-beg >= timeout){
-			break;
-		}
-		SleepEx(1);
-	}while(1);
-	return ETIMEDOUT;
-}
+    int WaitEvent(sem_t *hEvent, unsigned int milliseconds) {
+        int ret;
+        unsigned long long timeout = milliseconds;
+        unsigned long long beg = GetClockTimeMS();
+        do {
+            if (0 == sem_trywait((sem_t *) hEvent)) {
+                return 0;
+            }
+            ret = errno;
+            if (EAGAIN != ret) {
+                return ret;
+            }
+            if (GetClockTimeMS() - beg >= timeout) {
+                break;
+            }
+            SleepEx(1);
+        } while (1);
+        return ETIMEDOUT;
+    }
 #endif
 
-bool Semaphore::tryAcquire(int waitMilliSeconds){
+    bool Semaphore::tryAcquire(int waitMilliSeconds) {
 #ifdef WINDOWS
-	return WaitForSingleObject(sem_, waitMilliSeconds) == WAIT_OBJECT_0;
+        return WaitForSingleObject(sem_, waitMilliSeconds) == WAIT_OBJECT_0;
 #elif defined MAC
-	return WaitEvent(sem_, waitMilliSeconds) == 0;
+        return WaitEvent(sem_, waitMilliSeconds) == 0;
 #else
-	if(waitMilliSeconds > 0){
-		struct timespec curTime;
-		clock_gettime(CLOCK_REALTIME, &curTime);
-		long long ns = curTime.tv_nsec + (long long)waitMilliSeconds * 1000000ll;
-		curTime.tv_sec += ns / 1000000000;
-		curTime.tv_nsec = ns % 1000000000;
-		return sem_timedwait(&sem_, &curTime) == 0;
-	}else{
-		return sem_trywait(&sem_) == 0;
-	}
+        if (waitMilliSeconds > 0) {
+            struct timespec curTime;
+            clock_gettime(CLOCK_REALTIME, &curTime);
+            long long ns = curTime.tv_nsec + (long long) waitMilliSeconds * 1000000ll;
+            curTime.tv_sec += ns / 1000000000;
+            curTime.tv_nsec = ns % 1000000000;
+            return sem_timedwait(&sem_, &curTime) == 0;
+        } else {
+            return sem_trywait(&sem_) == 0;
+        }
 #endif
-}
+    }
 
-void Semaphore::release(){
+    void Semaphore::release() {
 #ifdef WINDOWS
-	if(!ReleaseSemaphore(sem_, 1, NULL))
-		throw RuntimeException("Failed to release semaphore with error code " + std::to_string(GetLastError()));
+        if (!ReleaseSemaphore(sem_, 1, NULL))
+            throw RuntimeException("Failed to release semaphore with error code " + std::to_string(GetLastError()));
 #elif defined MAC
-	int ret = sem_post(sem_);
-	if(ret != 0){
-		int err = errno;
-		throw RuntimeException("Failed to release semaphore with error code " + std::to_string(err));
-	}
+        int ret = sem_post(sem_);
+        if (ret != 0) {
+            int err = errno;
+            throw RuntimeException("Failed to release semaphore with error code " + std::to_string(err));
+        }
 #else
-	int ret = sem_post(&sem_);
-	if(ret != 0){
-		int err = errno;
-		throw RuntimeException("Failed to release semaphore with error code " + std::to_string(err));
-	}
+        int ret = sem_post(&sem_);
+        if (ret != 0) {
+            int err = errno;
+            throw RuntimeException("Failed to release semaphore with error code " + std::to_string(err));
+        }
 #endif
-}
+    }
 
-Thread::Thread(const RunnableSP& run):run_(run){
+    Thread::Thread(const RunnableSP &run) : run_(run) {
 #ifndef WINDOWS
-	thread_ = 0;
-	pthread_attr_init(&attr_);
-	pthread_attr_setdetachstate(&attr_, PTHREAD_CREATE_JOINABLE);
+        thread_ = 0;
+        pthread_attr_init(&attr_);
+        pthread_attr_setdetachstate(&attr_, PTHREAD_CREATE_JOINABLE);
 #else
-	thread_ = 0;
-	threadId_ = 0;
+        thread_ = 0;
+        threadId_ = 0;
 #endif
-}
+    }
 
-Thread::~Thread(){
+    Thread::~Thread() {
 #ifndef WINDOWS
-	pthread_attr_destroy(&attr_);
+        pthread_attr_destroy(&attr_);
 #endif
-}
+    }
 
 
-void Thread::setAffinity(int id) {
+    void Thread::setAffinity(int id) {
 #ifdef WINDOWS
-	SYSTEM_INFO SystemInfo;
-	GetSystemInfo(&SystemInfo);
-	if (id >= SystemInfo.dwNumberOfProcessors) {
-		throw RuntimeException("Core id exceed limit " + std::to_string(SystemInfo.dwNumberOfProcessors));
-	}
-	if (SetThreadAffinityMask(thread_, 1 << id) == 0) {
-		throw RuntimeException("BindCore failed, error code "+GetLastError());
-	}
+        SYSTEM_INFO SystemInfo;
+        GetSystemInfo(&SystemInfo);
+        if (id >= SystemInfo.dwNumberOfProcessors) {
+            throw RuntimeException("Core id exceed limit " + std::to_string(SystemInfo.dwNumberOfProcessors));
+        }
+        if (SetThreadAffinityMask(thread_, 1 << id) == 0) {
+            throw RuntimeException("BindCore failed, error code " + GetLastError());
+        }
 #elif defined MAC
-	throw RuntimeException("MacOS can't setaffinity.");
+        throw RuntimeException("MacOS can't setaffinity.");
 #else
-	int cpus = 0;
-	cpus = sysconf(_SC_NPROCESSORS_ONLN);
-	if (id >= cpus) {
-		throw RuntimeException("Core id exceed limit " + std::to_string(cpus));
-	}
-	cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(id, &mask);
-	if (sched_setaffinity(0, sizeof(mask), &mask) == -1) {
-		throw RuntimeException("BindCore failed, error code " + errno);
-	}
+        int cpus = 0;
+        cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        if (id >= cpus) {
+            throw RuntimeException("Core id exceed limit " + std::to_string(cpus));
+        }
+        cpu_set_t mask;
+        CPU_ZERO(&mask);
+        CPU_SET(id, &mask);
+        if (sched_setaffinity(0, sizeof(mask), &mask) == -1) {
+            throw RuntimeException("BindCore failed, error code " + errno);
+        }
 #endif
-}
+    }
 
-void Thread::start(){
+    void Thread::start() {
 #ifdef WINDOWS
-	thread_=CreateThread(NULL,0,(LPTHREAD_START_ROUTINE) startFunc,this,0,&threadId_);
-	if(thread_==0){
-		std::cout<<"Failed to create thread with error code "<<GetLastError()<<std::endl;
-	}
+        thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) startFunc, this, 0, &threadId_);
+        if (thread_ == 0) {
+            std::cout << "Failed to create thread with error code " << GetLastError() << std::endl;
+        }
 #else
-	int ret=pthread_create(&thread_, &attr_, startFunc, this);
-	if(ret!=0){
-		std::cout<<"Failed to create thread with return value: "<<ret<<std::endl;
-	}
+        int ret = pthread_create(&thread_, &attr_, startFunc, this);
+        if (ret != 0) {
+            std::cout << "Failed to create thread with return value: " << ret << std::endl;
+        }
 #endif
-}
+    }
 
-void Thread::join(){
+    void Thread::join() {
 #ifdef WINDOWS
-	WaitForSingleObject(thread_,INFINITE);
+        WaitForSingleObject(thread_, INFINITE);
 #else
-	pthread_join(thread_, NULL);
+        pthread_join(thread_, NULL);
 #endif
-}
+    }
 
-void Thread::sleep(int milliSeconds){
+    void Thread::sleep(int milliSeconds) {
 #ifdef WINDOWS
-	Sleep(milliSeconds);
+        Sleep(milliSeconds);
 #else
-	usleep(1000*milliSeconds);
+        usleep(1000 * milliSeconds);
 #endif
-}
+    }
 
-int Thread::getID(){
+    int Thread::getID() {
 #ifdef WINDOWS
-	return GetCurrentThreadId();
+        return GetCurrentThreadId();
 #elif defined MAC
-	return syscall(SYS_thread_selfid);
+        return syscall(SYS_thread_selfid);
 #else
-	return syscall(__NR_gettid);
+        return syscall(__NR_gettid);
 #endif
-}
+    }
 
-};
-
-
+};// namespace dolphindb

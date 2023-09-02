@@ -7,24 +7,24 @@
 
 #include <stddef.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
-typedef void (*block128_f) (const unsigned char in[16],
-                            unsigned char out[16], const void *key);
+typedef void (*block128_f)(const unsigned char in[16],
+                           unsigned char out[16], const void *key);
 
-typedef void (*cbc128_f) (const unsigned char *in, unsigned char *out,
-                          size_t len, const void *key,
-                          unsigned char ivec[16], int enc);
+typedef void (*cbc128_f)(const unsigned char *in, unsigned char *out,
+                         size_t len, const void *key,
+                         unsigned char ivec[16], int enc);
 
-typedef void (*ctr128_f) (const unsigned char *in, unsigned char *out,
-                          size_t blocks, const void *key,
-                          const unsigned char ivec[16]);
+typedef void (*ctr128_f)(const unsigned char *in, unsigned char *out,
+                         size_t blocks, const void *key,
+                         const unsigned char ivec[16]);
 
-typedef void (*ccm128_f) (const unsigned char *in, unsigned char *out,
-                          size_t blocks, const void *key,
-                          const unsigned char ivec[16],
-                          unsigned char cmac[16]);
+typedef void (*ccm128_f)(const unsigned char *in, unsigned char *out,
+                         size_t blocks, const void *key,
+                         const unsigned char ivec[16],
+                         unsigned char cmac[16]);
 
 void CRYPTO_cbc128_encrypt(const unsigned char *in, unsigned char *out,
                            size_t len, const void *key,
@@ -158,6 +158,6 @@ size_t CRYPTO_128_unwrap(void *key, const unsigned char *iv,
                          const unsigned char *in, size_t inlen,
                          block128_f block);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif

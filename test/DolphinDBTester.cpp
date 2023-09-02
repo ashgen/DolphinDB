@@ -1,8 +1,8 @@
 #include "../include/DolphinDB.h"
 #include "../include/Util.h"
-#include <vector>
-#include <limits.h>
 #include <assert.h>
+#include <limits.h>
+#include <vector>
 
 using namespace dolphindb;
 using namespace std;
@@ -30,7 +30,6 @@ void ASSERTION(const string test, const T &ret, const T &expect) {
         fail++;
     } else
         pass++;
-
 }
 
 template<typename T>
@@ -52,7 +51,6 @@ void ASSERTIONARR(const string test, const T ret[], const T expect[], int len) {
         fail++;
     } else
         pass++;
-
 }
 
 void printTestResults() {
@@ -62,7 +60,7 @@ void printTestResults() {
 }
 
 void testStringVector(int vecSize) {
-    vector < string > values;
+    vector<string> values;
     for (int i = 0; i < vecSize; i++)
         values.push_back(genRandString(30));
     string script;
@@ -100,8 +98,8 @@ void testDoubleVector(int vecSize) {
 
 void testDateVector() {
     string beginDate = "2010.08.20";
-    vector<int> testValues = { 1, 10, 100, 1000, 10000, 100000 };
-    vector < string > expectResults = { "2010.08.21", "2010.08.30", "2010.11.28", "2013.05.16", "2038.01.05", "2284.06.04" };
+    vector<int> testValues = {1, 10, 100, 1000, 10000, 100000};
+    vector<string> expectResults = {"2010.08.21", "2010.08.30", "2010.11.28", "2013.05.16", "2038.01.05", "2284.06.04"};
     string script;
     for (unsigned int i = 0; i < testValues.size(); i++) {
         script += " " + std::to_string(testValues[i]);
@@ -115,9 +113,10 @@ void testDateVector() {
 
 void testDatetimeVector() {
     string beginDateTime = "2012.10.01 15:00:04";
-    vector<int> testValues = { 1, 100, 1000, 10000, 100000, 1000000, 10000000 };
-    vector < string > expectResults = { "2012.10.01T15:00:05", "2012.10.01T15:01:44", "2012.10.01T15:16:44", "2012.10.01T17:46:44", "2012.10.02T18:46:44", "2012.10.13T04:46:44",
-            "2013.01.25T08:46:44" };
+    vector<int> testValues = {1, 100, 1000, 10000, 100000, 1000000, 10000000};
+    vector<string> expectResults = {"2012.10.01T15:00:05", "2012.10.01T15:01:44", "2012.10.01T15:16:44",
+                                    "2012.10.01T17:46:44", "2012.10.02T18:46:44", "2012.10.13T04:46:44",
+                                    "2013.01.25T08:46:44"};
     string script;
     for (unsigned int i = 0; i < testValues.size(); i++) {
         script += " " + std::to_string(testValues[i]);
@@ -131,10 +130,13 @@ void testDatetimeVector() {
 
 void testTimeStampVector() {
     string beginTimeStamp = "2009.10.12T00:00:00.000";
-    vector<long> testValues = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000, 100000000000, 1000000000000 };
-    vector < string > expectResults = { "2009.10.12T00:00:00.001", "2009.10.12T00:00:00.010", "2009.10.12T00:00:00.100", "2009.10.12T00:00:01.000", "2009.10.12T00:00:10.000",
-            "2009.10.12T00:01:40.000", "2009.10.12T00:16:40.000", "2009.10.12T02:46:40.000", "2009.10.13T03:46:40.000", "2009.10.23T13:46:40.000", "2010.02.04T17:46:40.000",
-            "2012.12.12T09:46:40.000", "2041.06.20T01:46:40.000" };
+    vector<long> testValues = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000,
+                               100000000000, 1000000000000};
+    vector<string> expectResults = {"2009.10.12T00:00:00.001", "2009.10.12T00:00:00.010", "2009.10.12T00:00:00.100",
+                                    "2009.10.12T00:00:01.000", "2009.10.12T00:00:10.000",
+                                    "2009.10.12T00:01:40.000", "2009.10.12T00:16:40.000", "2009.10.12T02:46:40.000",
+                                    "2009.10.13T03:46:40.000", "2009.10.23T13:46:40.000", "2010.02.04T17:46:40.000",
+                                    "2012.12.12T09:46:40.000", "2041.06.20T01:46:40.000"};
     string script;
     for (unsigned int i = 0; i < testValues.size(); i++) {
         script += " " + std::to_string(testValues[i]);
@@ -153,7 +155,7 @@ void testFunctionDef() {
 }
 
 void testMatrix() {
-    vector < string > expectResults = { "{1,2}", "{3,4}", "{5,6}" };
+    vector<string> expectResults = {"{1,2}", "{3,4}", "{5,6}"};
     string script = "1..6$2:3";
     ConstantSP result = conn.run(script);
     for (unsigned int i = 0; i < expectResults.size(); i++) {
@@ -201,9 +203,9 @@ void testMemoryTable() {
         dates->set(i, Util::createDate(2010, 1, i + 1));
         prices->set(i, Util::createDouble(i * i));
     }
-    vector < string > allnames = { "names", "dates", "prices" };
-    vector<ConstantSP> allcols = { names, dates, prices };
-    conn.upload(allnames, allcols); //upload data to server
+    vector<string> allnames = {"names", "dates", "prices"};
+    vector<ConstantSP> allcols = {names, dates, prices};
+    conn.upload(allnames, allcols);//upload data to server
     script += "insert into tglobal values(names,dates,prices);";
     script += "select * from tglobal;";
     TableSP table = conn.run(script);
@@ -211,8 +213,8 @@ void testMemoryTable() {
 }
 
 TableSP createDemoTable() {
-    vector < string > colNames = { "name", "date", "price" };
-    vector<DATA_TYPE> colTypes = { DT_STRING, DT_DATE, DT_DOUBLE };
+    vector<string> colNames = {"name", "date", "price"};
+    vector<DATA_TYPE> colTypes = {DT_STRING, DT_DATE, DT_DOUBLE};
     int colNum = 3, rowNum = 3;
     ConstantSP table = Util::createTable(colNames, colTypes, rowNum, 100);
     vector<VectorSP> columnVecs;
@@ -271,13 +273,16 @@ void ASSERTIONHASH(const string test, const int ret[], const int expect[], int l
         fail++;
     } else
         pass++;
-
 }
 void testCharVectorHash() {
-    vector<char> testValues { 127, -127, 12, 0, -12, -128 };
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int expected[5][6] = { { 10, 12, 12, 0, 10, -1 }, { 41, 18, 12, 0, 4, -1 }, { 56, 24, 12, 0, 68, -1 }, { 30, 5, 12, 0, 23, -1 }, { 127, 129, 12, 0, 244, -1 } };
-    int hv[6] = { 0 };
+    vector<char> testValues{127, -127, 12, 0, -12, -128};
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int expected[5][6] = {{10,  12,  12, 0, 10,  -1},
+                          {41,  18,  12, 0, 4,   -1},
+                          {56,  24,  12, 0, 68,  -1},
+                          {30,  5,   12, 0, 23,  -1},
+                          {127, 129, 12, 0, 244, -1}};
+    int hv[6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (unsigned int i = 0; i < testValues.size(); i++) {
@@ -295,10 +300,14 @@ void testCharVectorHash() {
 }
 
 void testShortVectorHash() {
-    vector<short> testValues { 32767, -32767, 12, 0, -12, -32768 };
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int expected[5][6] = { { 7, 2, 12, 0, 10, -1 }, { 1, 15, 12, 0, 4, -1 }, { 36, 44, 12, 0, 68, -1 }, { 78, 54, 12, 0, 23, -1 }, { 4088, 265, 12, 0, 244, -1 } };
-    int hv[6] = { 0 };
+    vector<short> testValues{32767, -32767, 12, 0, -12, -32768};
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int expected[5][6] = {{7,    2,   12, 0, 10,  -1},
+                          {1,    15,  12, 0, 4,   -1},
+                          {36,   44,  12, 0, 68,  -1},
+                          {78,   54,  12, 0, 23,  -1},
+                          {4088, 265, 12, 0, 244, -1}};
+    int hv[6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (unsigned int i = 0; i < testValues.size(); i++) {
@@ -315,10 +324,14 @@ void testShortVectorHash() {
     }
 }
 void testIntVectorHash() {
-    vector<int> testValues { INT_MAX, INT_MAX * (-1), 12, 0, -12, INT_MIN };
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int expected[5][6] = { { 10, 12, 12, 0, 10, -1 }, { 7, 9, 12, 0, 4, -1 }, { 39, 41, 12, 0, 68, -1 }, { 65, 67, 12, 0, 23, -1 }, { 127, 129, 12, 0, 244, -1 } };
-    int hv[6] = { 0 };
+    vector<int> testValues{INT_MAX, INT_MAX * (-1), 12, 0, -12, INT_MIN};
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int expected[5][6] = {{10,  12,  12, 0, 10,  -1},
+                          {7,   9,   12, 0, 4,   -1},
+                          {39,  41,  12, 0, 68,  -1},
+                          {65,  67,  12, 0, 23,  -1},
+                          {127, 129, 12, 0, 244, -1}};
+    int hv[6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (unsigned int i = 0; i < testValues.size(); i++) {
@@ -336,10 +349,14 @@ void testIntVectorHash() {
 }
 
 void testLongVectorHash() {
-    vector<long long> testValues { LLONG_MAX, (-1) * LLONG_MAX, 12, 0, -12, LLONG_MIN };
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int expected[5][6] = { { 7, 9, 12, 0, 4, -1 }, { 41, 0, 12, 0, 29, -1 }, { 4, 6, 12, 0, 69, -1 }, { 78, 80, 12, 0, 49, -1 }, { 4088, 4090, 12, 0, 4069, -1 } };
-    int hv[6] = { 0 };
+    vector<long long> testValues{LLONG_MAX, (-1) * LLONG_MAX, 12, 0, -12, LLONG_MIN};
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int expected[5][6] = {{7,    9,    12, 0, 4,    -1},
+                          {41,   0,    12, 0, 29,   -1},
+                          {4,    6,    12, 0, 69,   -1},
+                          {78,   80,   12, 0, 49,   -1},
+                          {4088, 4090, 12, 0, 4069, -1}};
+    int hv[6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (unsigned int i = 0; i < testValues.size(); i++) {
@@ -357,10 +374,15 @@ void testLongVectorHash() {
 }
 
 void testStringVectorHash() {
-    vector < string > testValues { "9223372036854775807", "helloworldabcdefghijklmnopqrstuvwxyz", "智臾科技", "hello,智臾科技", "123abc您好！", "" };
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int expected[5][6] = { { 8, 1, 11, 8, 10, 0 }, { 37, 20, 14, 23, 41, 0 }, { 31, 0, 41, 63, 40, 0 }, { 24, 89, 51, 54, 42, 0 }, { 739, 3737, 814, 3963, 3488, 0 } };
-    int hv[6] = { 0 };
+    vector<string> testValues{"9223372036854775807", "helloworldabcdefghijklmnopqrstuvwxyz", "智臾科技",
+                              "hello,智臾科技", "123abc您好！", ""};
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int expected[5][6] = {{8,   1,    11,  8,    10,   0},
+                          {37,  20,   14,  23,   41,   0},
+                          {31,  0,    41,  63,   40,   0},
+                          {24,  89,   51,  54,   42,   0},
+                          {739, 3737, 814, 3963, 3488, 0}};
+    int hv[6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (unsigned int i = 0; i < testValues.size(); i++) {
@@ -381,9 +403,9 @@ void testUUIDvectorHash() {
     script = "a=rand(uuid(),6);table(a as k,hashBucket(a,13) as v1,hashBucket(a,43) as v2,hashBucket(a,71) as v3,hashBucket(a,97) as v4,hashBucket(a,4097) as v5)";
     TableSP t = conn.run(script);
 
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int hv[6] = { 0 };
-    int expected[5][6] = { 0 };
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int hv[6] = {0};
+    int expected[5][6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (int i = 0; i < t->size(); i++) {
@@ -400,16 +422,15 @@ void testUUIDvectorHash() {
         v->getHash(0, 6, buckets[j], hv);
         ASSERTIONHASH("testUUIDvectorHash", hv, expected[j], 6);
     }
-
 }
 void testIpAddrvectorHash() {
     string script;
     script = "a=rand(ipaddr(),6);table(a as k,hashBucket(a,13) as v1,hashBucket(a,43) as v2,hashBucket(a,71) as v3,hashBucket(a,97) as v4,hashBucket(a,4097) as v5)";
     TableSP t = conn.run(script);
 
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int hv[6] = { 0 };
-    int expected[5][6] = { 0 };
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int hv[6] = {0};
+    int expected[5][6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (int i = 0; i < t->size(); i++) {
@@ -426,16 +447,15 @@ void testIpAddrvectorHash() {
         v->getHash(0, 6, buckets[j], hv);
         ASSERTIONHASH("testIpAddrvectorHash", hv, expected[j], 6);
     }
-
 }
 void testInt128vectorHash() {
     string script;
     script = "a=rand(int128(),6);table(a as k,hashBucket(a,13) as v1,hashBucket(a,43) as v2,hashBucket(a,71) as v3,hashBucket(a,97) as v4,hashBucket(a,4097) as v5)";
     TableSP t = conn.run(script);
 
-    int buckets[5] = { 13, 43, 71, 97, 4097 };
-    int hv[6] = { 0 };
-    int expected[5][6] = { 0 };
+    int buckets[5] = {13, 43, 71, 97, 4097};
+    int hv[6] = {0};
+    int expected[5][6] = {0};
 
     for (unsigned int j = 0; j < 5; j++) {
         for (int i = 0; i < t->size(); i++) {
@@ -452,33 +472,33 @@ void testInt128vectorHash() {
         v->getHash(0, 6, buckets[j], hv);
         ASSERTIONHASH("testInt128vectorHash", hv, expected[j], 6);
     }
-
 }
-char* random_uuid(char buf[37]) {
+
+char *random_uuid(char buf[37]) {
     const char *c = "89ab";
     char *p = buf;
     int n;
     for (n = 0; n < 16; ++n) {
         int b = rand() % 255;
         switch (n) {
-        case 6:
-            sprintf(p, "4%x", b % 15);
-            break;
-        case 8:
-            sprintf(p, "%c%x", c[rand() % strlen(c)], b % 15);
-            break;
-        default:
-            sprintf(p, "%02x", b);
-            break;
+            case 6:
+                sprintf(p, "4%x", b % 15);
+                break;
+            case 8:
+                sprintf(p, "%c%x", c[rand() % strlen(c)], b % 15);
+                break;
+            default:
+                sprintf(p, "%02x", b);
+                break;
         }
         p += 2;
         switch (n) {
-        case 3:
-        case 5:
-        case 7:
-        case 9:
-            *p++ = '-';
-            break;
+            case 3:
+            case 5:
+            case 7:
+            case 9:
+                *p++ = '-';
+                break;
         }
     }
     *p = 0;
@@ -487,8 +507,8 @@ char* random_uuid(char buf[37]) {
 void testScalar() {
     int i;
 
-    int intVal[2] = { 0x7fffffff, -0x7fffffff };
-    long long longVal[2] = { 0x7fffffffffffffff, -0x7fffffffffffffff }; //9223372036854775807
+    int intVal[2] = {0x7fffffff, -0x7fffffff};
+    long long longVal[2] = {0x7fffffffffffffff, -0x7fffffffffffffff};//9223372036854775807
     for (i = 0; i < 2; i++) {
         ConstantSP spInt = Util::createInt(intVal[i]);
         ASSERTION("testConstantInt1", spInt->getInt(), intVal[i]);
@@ -502,39 +522,38 @@ void testScalar() {
         ASSERTION("testConstantLong2", spLong->getLong(), longVal[i]);
         assert(spLong->isScalar() && spLong->getForm() == DF_SCALAR && spLong->getType() == DT_LONG);
 
-        ConstantSP spFloat = Util::createFloat(intVal[i]+0.12345);
-        ASSERTION("testConstantFloat1", spFloat->getFloat(), (float)(intVal[i]+0.12345));
-        spFloat = Util::parseConstant(DT_FLOAT, std::to_string(intVal[i]+0.12345));
-        ASSERTION("testConstantFloat2", spFloat->getFloat(), (float)(intVal[i]+0.12345));
+        ConstantSP spFloat = Util::createFloat(intVal[i] + 0.12345);
+        ASSERTION("testConstantFloat1", spFloat->getFloat(), (float) (intVal[i] + 0.12345));
+        spFloat = Util::parseConstant(DT_FLOAT, std::to_string(intVal[i] + 0.12345));
+        ASSERTION("testConstantFloat2", spFloat->getFloat(), (float) (intVal[i] + 0.12345));
         assert(spFloat->isScalar() && spFloat->getForm() == DF_SCALAR && spFloat->getType() == DT_FLOAT);
 
-        ConstantSP spDouble = Util::createDouble(longVal[i]+0.12345);
-        ASSERTION("testConstantDouble1", spDouble->getDouble(), (double)(longVal[i]+0.12345));
-        spDouble = Util::parseConstant(DT_DOUBLE, std::to_string(longVal[i]+0.12345));
-        ASSERTION("testConstantDouble2", spDouble->getDouble(), (double)(longVal[i]+0.12345));
+        ConstantSP spDouble = Util::createDouble(longVal[i] + 0.12345);
+        ASSERTION("testConstantDouble1", spDouble->getDouble(), (double) (longVal[i] + 0.12345));
+        spDouble = Util::parseConstant(DT_DOUBLE, std::to_string(longVal[i] + 0.12345));
+        ASSERTION("testConstantDouble2", spDouble->getDouble(), (double) (longVal[i] + 0.12345));
         assert(spDouble->isScalar() && spDouble->getForm() == DF_SCALAR && spDouble->getType() == DT_DOUBLE);
-
     }
-    ConstantSP sp=Util::parseConstant(DT_FLOAT, "a.1");
-    cout<<sp->getFloat()<<endl;
+    ConstantSP sp = Util::parseConstant(DT_FLOAT, "a.1");
+    cout << sp->getFloat() << endl;
 
     ConstantSP spIP = Util::createConstant(DT_IP);
-    unsigned char ip[16] = { 0 };
+    unsigned char ip[16] = {0};
     for (i = 0; i < 16; i++)
         ip[i] = i;
     spIP->setBinary(0, 16, ip);
     ASSERTION("testConstantIPaddr1", spIP->getString(), string("f0e:d0c:b0a:908:706:504:302:100"));
     assert(spIP->isScalar() && spIP->getForm() == DF_SCALAR && spIP->getType() == DT_IP);
 
-    spIP = Util::parseConstant(DT_IP, "f0e:d0c:b0a:908:706:504:302:100"); //"192.168.2.1");
+    spIP = Util::parseConstant(DT_IP, "f0e:d0c:b0a:908:706:504:302:100");//"192.168.2.1");
     assert(spIP->isScalar() && spIP->getForm() == DF_SCALAR && spIP->getType() == DT_IP);
-    unsigned char *bi = (unsigned char*) spIP->getBinary();
+    unsigned char *bi = (unsigned char *) spIP->getBinary();
     ASSERTIONARR("testConstantIPaddr2", bi, ip, 16);
     spIP = Util::parseConstant(DT_IP, "192.168.2.1");
     assert(spIP->isScalar() && spIP->getForm() == DF_SCALAR && spIP->getType() == DT_IP);
     memset(ip, 0, 16);
     ip[0] = 1, ip[1] = 2, ip[2] = 168, ip[3] = 192;
-    bi = (unsigned char*) spIP->getBinary();
+    bi = (unsigned char *) spIP->getBinary();
     ASSERTIONARR("testConstantIPaddr3", bi, ip, 16);
     spIP = Util::parseConstant(DT_IP, "90:b0a:908:706:504:302:100");
     assert(spIP.isNull());
@@ -554,7 +573,7 @@ void testScalar() {
         ip[i] = i;
     spUuid->setBinary(0, 16, ip);
     assert(spUuid->isScalar() && spUuid->getForm() == DF_SCALAR && spUuid->getType() == DT_UUID);
-    bi = (unsigned char*) spUuid->getBinary();
+    bi = (unsigned char *) spUuid->getBinary();
     ASSERTIONARR("testConstantUUDI1", bi, ip, 16);
     char guid[37];
     for (i = 0; i < 100; i++) {
@@ -583,7 +602,7 @@ void testScalar() {
         ip[i] = i;
     spInt128->setBinary(0, 16, ip);
     assert(spInt128->isScalar() && spInt128->getForm() == DF_SCALAR && spInt128->getType() == DT_INT128);
-    bi = (unsigned char*) spInt128->getBinary();
+    bi = (unsigned char *) spInt128->getBinary();
     ASSERTIONARR("testConstantInt1281", bi, ip, 16);
 
     spInt128 = Util::parseConstant(DT_INT128, "34f0302cae07db8201d895e3acc0c703");
